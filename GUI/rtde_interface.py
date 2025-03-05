@@ -40,3 +40,7 @@ def get_actual_joint_positions():
         return rtde_r.getActualQ()
     else:
         raise RuntimeError("RTDE receive interface is not connected.")
+
+# import Robodk script
+# manier bedenken om schroevendraaier functies te implementeren tussen de movej functies
+# manier bedenken om .script files te verwerken, misschien weergeven, status tracken, wanneer we aan het oppakken en indraaien zijn

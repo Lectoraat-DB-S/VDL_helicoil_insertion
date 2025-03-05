@@ -56,7 +56,7 @@ def on_message(data):
     """Handle incoming WebSocket messages and update the GUI."""
     global screwdriver_data, gui_app_instance
 
-    print(f"[DEBUG] Raw message received: {data}")
+    #print(f"[DEBUG] Raw message received: {data}")
 
     try:
         # Check if the message contains the expected data structure
@@ -69,7 +69,7 @@ def on_message(data):
                     # Log the received data
                     if screwdriver_data:
                         ScrewdriverData(**screwdriver_data)
-                        print("[SUCCESS] Screwdriver data stored:", ScrewdriverData)
+                        #print("[SUCCESS] Screwdriver data stored:", ScrewdriverData)
                     else:
                         print("[WARNING] Received empty screwdriver data!")
 
@@ -77,7 +77,7 @@ def on_message(data):
                     if gui_app_instance is not None:
                         try:
                             gui_app_instance.root.after(100, gui_app_instance.update_screwdriver_data)
-                            print("[SUCCESS] GUI update scheduled!")
+                            #print("[SUCCESS] GUI update scheduled!")
                         except AttributeError:
                             print("[ERROR] GUI instance does not have 'update_screwdriver_data'.")
                     else:
@@ -90,9 +90,9 @@ def on_message(data):
 def get_screwdriver_data():
     """Return the latest screwdriver data."""
     global screwdriver_data
-    print("[INFO] get_screwdriver_data() called")
+    #print("[INFO] get_screwdriver_data() called")
     if screwdriver_data is None:
         print("[WARNING] No screwdriver data available yet!")
-    else:
-        print(f"[INFO] Returning screwdriver data: {screwdriver_data}")
+    #else:
+        #print(f"[INFO] Returning screwdriver data: {screwdriver_data}")
     return screwdriver_data

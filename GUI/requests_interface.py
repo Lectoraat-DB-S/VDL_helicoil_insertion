@@ -71,8 +71,12 @@ def indraaien():
     time.sleep(2)
     tighten_screw(screwing_l_mm=14, torque_nm=2)
 
-    if check_busy() is not True:
-     loosen_screw(unscrewing_lenght_mm=10)
+    # Wait until screwdriver is no longer busy
+    while check_busy():
+        time.sleep(0.001)  # Small delay to prevent CPU overload
+
+    loosen_screw(unscrewing_lenght_mm=10)
+
 
 # Functie om een schroef uit te draaien
 def uitdraaien():
@@ -80,5 +84,8 @@ def uitdraaien():
     time.sleep(2)
     tighten_screw(screwing_l_mm=15, torque_nm=0.30)
 
-    if check_busy() is not True:
-     loosen_screw(unscrewing_lenght_mm=8)
+    # Wait until screwdriver is no longer busy
+    while check_busy():
+        time.sleep(0.001)  # Small delay to prevent CPU overload
+
+    loosen_screw(unscrewing_lenght_mm=8)

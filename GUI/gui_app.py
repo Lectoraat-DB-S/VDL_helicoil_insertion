@@ -34,6 +34,8 @@ class GUIApp:
 
         self.update_screwdriver_data_periodically()  # Start automatische updates
 
+        # check connections periodically
+        self.check_connections_periodically()
 
     def start_socket_io(self):
         """Verbind met de Socket.IO server en houd de verbinding in stand."""
@@ -60,7 +62,7 @@ class GUIApp:
                      f"Huidige torque: {current_torque} Nm",
                 fg="green"
             )
-            print("[SUCCESS] GUI updated with new screwdriver data!")  # Debugging print
+            #print("[SUCCESS] GUI updated with new screwdriver data!")  # Debugging print
         else:
             self.screwdriver_label.config(text="Screwdriver data: Niet beschikbaar", fg="red")
 
@@ -84,6 +86,8 @@ class GUIApp:
         # setup generic functions tab
         self.setup_generic_tab()
 
+
+
     def setup_sd_functions_tab(self):
         status_frame = tk.Frame(self.tab3)
         status_frame.pack(pady=10)
@@ -103,79 +107,68 @@ class GUIApp:
         btn_loosen_screw = tk.Button(status_frame, text="Loosen screw", command=self.run_loosen_screw, width=20)
         btn_loosen_screw.pack(pady=10)
 
+    def _run_operation(self, operation_name, prompts, operation_func):
+        """
+        Generic method to run an operation with user input and threading.
+
+        :param operation_name: Name of the operation for dialog and logging
+        :param prompts: List of input prompts
+        :param operation_func: Function to execute the actual operation
+        """
+        values = self.get_input_values(operation_name, prompts)
+        if values:
+            self.run_in_thread(self._execute_operation, operation_name, operation_func, *values)
+
+    def _execute_operation(self, operation_name, operation_func, *args):
+        """
+        Generic method to execute an operation and log results.
+
+        :param operation_name: Name of the operation for logging
+        :param operation_func: Function to execute the actual operation
+        :param args: Arguments for the operation function
+        """
+        try:
+            operation_func(*args)
+            self.log_message(f"Succes {operation_name} voltooid!")
+        except Exception as e:
+            self.log_message(f"Fout {operation_name} mislukt: {str(e)}")
+
     def run_move_shank(self):
         """Voer de move_shank functie uit met een ingevoerde waarde."""
         value = simpledialog.askfloat("Move Shank", "Voer de shank positie in (0-55):")
-        if value is not None:  # Als de gebruiker niet op 'Cancel' heeft geklikt
-            self.run_in_thread(self._execute_move_shank, value)
-
-    def _execute_move_shank(self, shaft_value):
-        """Voer move_shank uit in een aparte thread."""
-        try:
-            move_shank(shaft_value)
-            self.log_message("Succes Move shank voltooid!")
-        except Exception as e:
-            self.log_message("Fout Move shank mislukt")
+        if value is not None:
+            self.run_in_thread(self._execute_operation, "Move shank", move_shank, value)
 
     def run_pick_screw(self):
         """Voer de pick_screw functie uit met ingevoerde waarden."""
         prompts = ["Voer de shank force in (N):", "Voer de screwing lengte in (mm):"]
-        values = self.get_input_values("Pick Screw", prompts)
-        if values:
-            self.run_in_thread(self._execute_pick_screw, values[0], values[1])
-
-    def _execute_pick_screw(self, shank_force_n, screwing_l_mm):
-        """Voer pick_screw uit in een aparte thread."""
-        try:
-            pick_screw(shank_force_n, screwing_l_mm)
-            self.log_message("Succes Pick screw voltooid!")
-        except Exception as e:
-            self.log_message("Fout Pick screw mislukt")
+        self._run_operation("Pick Screw", prompts, pick_screw)
 
     def run_premount_screw(self):
         """Voer de premount_screw functie uit met ingevoerde waarden."""
-        prompts = ["Voer de shank force in (N):", "Voer de screwing lengte in (mm):", "Voer het torque in (Nm):"]
-        values = self.get_input_values("Pre-mount Screw", prompts)
-        if values:
-            self.run_in_thread(self._execute_premount_screw, values[0], values[1], values[2])
-
-    def _execute_premount_screw(self, shank_force_n, screwing_l_mm, torque_nm):
-        """Voer premount_screw uit in een aparte thread."""
-        try:
-            premount_screw(shank_force_n, screwing_l_mm, torque_nm)
-            self.log_message("Succes Pre-mount screw voltooid!")
-        except Exception as e:
-            self.log_message("Fout Pre-mount screw mislukt")
+        prompts = [
+            "Voer de shank force in (N):",
+            "Voer de screwing lengte in (mm):",
+            "Voer het torque in (Nm):"
+        ]
+        self._run_operation("Pre-mount Screw", prompts, premount_screw)
 
     def run_tighten_screw(self):
         """Voer de tighten_screw functie uit met ingevoerde waarden."""
-        prompts = ["Voer de shank force in (N):", "Voer de screwing lengte in (mm):", "Voer het torque in (Nm):"]
-        values = self.get_input_values("Tighten Screw", prompts)
-        if values:
-            self.run_in_thread(self._execute_tighten_screw, values[0], values[1], values[2])
-
-    def _execute_tighten_screw(self, shank_force_n, screwing_l_mm, torque_nm):
-        """Voer tighten_screw uit in een aparte thread."""
-        try:
-            tighten_screw(shank_force_n, screwing_l_mm, torque_nm)
-            self.log_message("Succes Tighten screw voltooid!")
-        except Exception as e:
-            self.log_message("Fout Tighten screw mislukt")
+        prompts = [
+            "Voer de shank force in (N):",
+            "Voer de screwing lengte in (mm):",
+            "Voer het torque in (Nm):"
+        ]
+        self._run_operation("Tighten Screw", prompts, tighten_screw)
 
     def run_loosen_screw(self):
         """Voer de loosen_screw functie uit met ingevoerde waarden."""
-        prompts = ["Voer de shank force in (N):", "Voer de unscrewing lengte in (mm):"]
-        values = self.get_input_values("Loosen Screw", prompts)
-        if values:
-            self.run_in_thread(self._execute_loosen_screw, values[0], values[1])
-
-    def _execute_loosen_screw(self, shank_force_n, unscrewing_lenght_mm):
-        """Voer loosen_screw uit in een aparte thread."""
-        try:
-            loosen_screw(shank_force_n, unscrewing_lenght_mm)
-            self.log_message("Succes Loosen screw voltooid!")
-        except Exception as e:
-            self.log_message("Fout Loosen screw mislukt")
+        prompts = [
+            "Voer de shank force in (N):",
+            "Voer de unscrewing lengte in (mm):"
+        ]
+        self._run_operation("Loosen Screw", prompts, loosen_screw)
 
     def setup_generic_tab(self):
         status_frame = tk.Frame(self.tab4)
@@ -245,6 +238,11 @@ class GUIApp:
         self.log_text = tk.Text(self.tab2, height=20, width=80)
         self.log_text.pack(pady=10)
 
+    def check_connections_periodically(self):
+        """Periodieke controle van de verbindingen."""
+        self.check_connections()
+        self.root.after(5000, self.check_connections_periodically)  # Herhaal elke 5 seconden
+
     def check_connections(self):
         """Controleer de verbindingen."""
         rtde_conn = initialize_rtde()
@@ -291,7 +289,7 @@ class GUIApp:
         self.log_text.insert(tk.END, f"{message}\n")
         self.log_text.see(tk.END)
 
-    def run_in_thread(func, *args):
+    def run_in_thread(self, func, *args):
         """Voer een functie uit in een aparte thread."""
         thread = threading.Thread(target=func, args=args)
         thread.start()
