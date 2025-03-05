@@ -2,9 +2,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog, messagebox
 import threading
 import time
-import socketio_interface
-from rtde_interface import move_to_position, get_actual_joint_positions, joint_position_1, joint_position_2, initialize_rtde, rtde_connected
-from socketio_interface import connect_to_server, sio, get_screwdriver_data, gui_app_instance
+from rtde_interface import *
+from socketio_interface import *
 from requests_interface import *
 
 class GUIApp:
