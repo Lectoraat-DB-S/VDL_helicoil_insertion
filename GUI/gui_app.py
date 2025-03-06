@@ -1,10 +1,14 @@
-import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog, messagebox
 import threading
 import time
+import tkinter as tk
+from tkinter import ttk, simpledialog, filedialog
+
+from requests_interface import *
 from rtde_interface import *
 from socketio_interface import *
-from requests_interface import *
+from rtde_interface import is_robot_busy  # Importeer de functie uit rtde_interface
+from requests_interface import check_busy  # Importeer de functie uit requests_interface
+
 
 class GUIApp:
     def __init__(self, root):
@@ -35,7 +39,7 @@ class GUIApp:
         self.update_screwdriver_data_periodically()  # Start automatische updates
 
         # check connections periodically
-        self.check_connections_periodically()
+        #self.check_connections_periodically()
 
     def start_socket_io(self):
         """Verbind met de Socket.IO server en houd de verbinding in stand."""
@@ -175,6 +179,11 @@ class GUIApp:
         status_frame.pack(pady=10)
 
         """Knoppen in de linkerkolom van de GUI."""
+
+        # Voeg een knop toe om een scriptbestand te selecteren
+        btn_load_script = tk.Button(status_frame, text="Laad Script", command=self.load_script, width=20)
+        btn_load_script.pack(pady=10)
+
         btn_indraaien = tk.Button(status_frame, text="Indraaien", command=self.run_indraaien, width=20)
         btn_indraaien.pack(pady=10)
 
@@ -192,6 +201,73 @@ class GUIApp:
         btn_refresh_status = tk.Button(status_frame, text="Refresh Status", command=self.update_screwdriver_data,
                                        width=20)
         btn_refresh_status.pack(pady=10)
+
+    def load_script(self):
+        """Open een bestandsselectievenster en laad het scriptbestand."""
+        file_path = filedialog.askopenfilename(
+            title="Selecteer het scriptbestand",
+            filetypes=(("Python files", "*.py"), ("All files", "*.*"))
+        )
+        if file_path:
+            commands = self.parse_script(file_path)
+            self.display_commands(commands)
+
+    def parse_script(self, file_path):
+        """Parse het scriptbestand en extraheer commando's."""
+        commands = []
+        with open(file_path, 'r') as file:
+            for line in file:
+                # Verwijder witruimte aan het begin en einde van de regel
+                line = line.strip()
+
+                # Controleer of de regel begint met een van de commando's
+                if line.startswith(('movej', 'movel', 'move_shank')):
+                    commands.append(line)
+        return commands
+
+    def display_commands(self, commands):
+        """Toon de geëxtraheerde commando's in de GUI en voer ze een voor een uit."""
+        self.log_message("\nGeëxtraheerde commando's:")
+
+        # Definieer een functie om de commando's uit te voeren met een vertraging
+        def execute_commands_with_delay(commands):
+            for i, command in enumerate(commands):
+                self.log_message(f"{i + 1}: {command}")  # Log het commando
+
+                # Voer het commando uit #
+                while is_robot_busy() or check_busy():
+                    time.sleep(0.250)  # Wacht 100 ms voordat je opnieuw controleert
+                    self.log_message("wachten tot robot niet actief is")
+
+                self.execute_command(command)
+
+                # Wacht 1 seconde voordat het volgende commando wordt uitgevoerd
+                time.sleep(1)
+
+        # Voer de functie uit in een aparte thread
+        self.run_in_thread(execute_commands_with_delay, commands)
+
+    def execute_command(self, command):
+        """Voer een enkel commando uit."""
+        try:
+            if command.startswith('movej'):
+                # Voer een joint movement uit
+                self.log_message(f"Uitvoeren: {command}")
+                # Voeg hier de logica toe om movej uit te voeren met RTDE
+            elif command.startswith('movel'):
+                # Voer een lineaire movement uit
+                self.log_message(f"Uitvoeren: {command}")
+                # Voeg hier de logica toe om movel uit te voeren met RTDE
+            elif command.startswith('move_shank'):
+                # Voer een screwdriver actie uit
+                self.log_message(f"Uitvoeren: {command}")
+                # Voeg hier de logica toe om move_shank uit te voeren
+            else:
+                self.log_message(f"Onbekend commando: {command}")
+        except Exception as e:
+            self.log_message(f"Fout bij uitvoeren van commando: {command}\nFoutmelding: {e}")
+
+
 
     def get_input_values(self, title, prompts):
         """Toon een dialoogvenster om meerdere waarden in te voeren."""
