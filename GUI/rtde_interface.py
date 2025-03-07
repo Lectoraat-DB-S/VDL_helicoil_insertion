@@ -9,7 +9,7 @@ rtde_i = None
 rtde_connected = False
 
 def initialize_rtde():
-    """Initialiseer de RTDE-interfaces als ze nog niet zijn geïnitialiseerd."""
+    """Initialize the RTDE interfaces if they have not been initialized yet."""
     global rtde_r, rtde_c, rtde_i, rtde_connected
     if not rtde_connected:
         try:
@@ -32,7 +32,7 @@ joint_position_2 = [-0.02115327516664678, -0.7476166051677247, 1.330127064381734
 
 def is_robot_physically_moving(debug=False):
     """
-    Check if the robot is physically moving, ongeacht de programmastatus.
+    Check if the robot is physically moving, regardless of the program status.
 
     Args:
         debug (bool): If True, print debug information about each check
@@ -43,7 +43,7 @@ def is_robot_physically_moving(debug=False):
     if rtde_r is None:
         raise RuntimeError("RTDE receive interface is not initialized.")
 
-    # Controleer joint snelheden (meest directe indicatie van beweging)
+    # Check joint speeds (most direct indication of movement)
     actual_joint_velocities = rtde_r.getActualQd()
     velocity_threshold = 0.005
 
@@ -52,11 +52,11 @@ def is_robot_physically_moving(debug=False):
         print(f"Joint velocities: {[round(v, 6) for v in actual_joint_velocities]}")
         print(f"Any joint moving above threshold {velocity_threshold}: {any_joint_moving}")
 
-    # Als er joints bewegen, is de robot fysiek bezig
+    # If joints are moving, the robot is physically active
     if any_joint_moving:
         return True
 
-    # Controleer doelpositie vs. huidige positie (als robot beweegt richting een doel)
+    # Check target position vs. current position (if robot is moving towards a target)
     if hasattr(rtde_r, 'getTargetQ') and hasattr(rtde_r, 'getActualQ'):
         target_q = rtde_r.getTargetQ()
         actual_q = rtde_r.getActualQ()
@@ -69,14 +69,14 @@ def is_robot_physically_moving(debug=False):
         if debug:
             print(f"Position differences: {[round(diff, 6) for diff in position_differences]}")
             print(f"Any position difference above threshold {position_threshold}: {has_position_difference}")
-            print("robot moving ---------------------------------------")
+            print("Robot moving ---------------------------------------")
 
-        # Als er een significant verschil is tussen doel en huidige positie,
-        # is de robot waarschijnlijk in beweging of gaat bewegen
+        # If there is a significant difference between target and current position,
+        # the robot is probably moving or about to move
         if has_position_difference:
             return True
 
-    # Als geen van beide methoden beweging detecteert, staat de robot stil
+    # If neither method detects movement, the robot is idle
     return False
 
 
@@ -91,6 +91,3 @@ def get_actual_joint_positions():
         return rtde_r.getActualQ()
     else:
         raise RuntimeError("RTDE receive interface is not connected.")
-
-
-# manier bedenken om .script files te verwerken, misschien weergeven, status tracken, wanneer we aan het oppakken en indraaien zijn
