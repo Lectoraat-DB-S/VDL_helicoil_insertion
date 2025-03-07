@@ -62,8 +62,7 @@ def check_busy():
     data = socketio_interface.get_screwdriver_data()
 
     if data:
-      return data.get("screwdriver_busy", False)
-
+      return data.get("screwdriver_busy", False) or data.get("shank_busy", False)
 
 # Functie om een schroef in te draaien
 def indraaien():

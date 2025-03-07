@@ -1,3 +1,4 @@
+import re
 import threading
 import time
 import tkinter as tk
@@ -6,15 +7,15 @@ from tkinter import ttk, simpledialog, filedialog
 from requests_interface import *
 from rtde_interface import *
 from socketio_interface import *
-from rtde_interface import is_robot_busy  # Importeer de functie uit rtde_interface
-from requests_interface import check_busy  # Importeer de functie uit requests_interface
+from rtde_interface import is_robot_physically_moving
+from requests_interface import check_busy
 
 
 class GUIApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("OnRobot Schroefproject")
-        self.root.geometry("1000x600")  # GUI grootte
+        self.root.title("VDL_ETG")
+        self.root.geometry("1000x600")  # GUI size
 
         # Set the GUI instance before starting Socket.IO
         socketio_interface.gui_app_instance = self
@@ -22,7 +23,7 @@ class GUIApp:
 
 
 
-        # Frames voor layout
+        # Frames for layouts
         self.left_frame = tk.Frame(root, bg="lightgray", width=300)
         self.left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
 
@@ -33,23 +34,23 @@ class GUIApp:
         self.setup_left_side()
         self.setup_right_side()
 
-        # Start een thread voor WebSocket verbinding en data-updates
+        # Start a thread for WebSocket connection en data-updates
         threading.Thread(target=self.start_socket_io, daemon=True).start()
 
-        self.update_screwdriver_data_periodically()  # Start automatische updates
+        self.update_screwdriver_data_periodically()  # Start automatic update
 
         # check connections periodically
-        #self.check_connections_periodically()
+        # self.check_connections_periodically()
 
     def start_socket_io(self):
-        """Verbind met de Socket.IO server en houd de verbinding in stand."""
+        """Connect to the Socket.io server and keep the connection alive"""
         while True:
             if connect_to_server():
-                print("[INFO] Verbonden met de server. Wachten op berichten...")
-                sio.wait()  # Houd de verbinding open
+                print("[INFO] Connected to server. Waiting for messages...")
+                sio.wait()  # Keep the connection alive
             else:
-                print("[ERROR] Kan niet verbinden. Opnieuw proberen in 5 seconden...")
-                time.sleep(5)  # Wacht voordat je opnieuw probeert
+                print("[ERROR] Unable to connect. Retrying in 5 seconds...")
+                time.sleep(5)  # Wait before you try again
 
     def update_screwdriver_data(self):
         """Update the GUI with the latest screwdriver data."""
@@ -234,9 +235,10 @@ class GUIApp:
             for i, command in enumerate(commands):
                 self.log_message(f"{i + 1}: {command}")  # Log het commando
 
-                # Voer het commando uit #
-                while is_robot_busy() or check_busy():
-                    time.sleep(0.250)  # Wacht 100 ms voordat je opnieuw controleert
+                # Check if robot or screwdriver is busy
+                while is_robot_physically_moving(debug=True) or check_busy():
+
+                    time.sleep(0.5)  # Wacht 100 ms voordat je opnieuw controleert
                     self.log_message("wachten tot robot niet actief is")
 
                 self.execute_command(command)
@@ -248,26 +250,60 @@ class GUIApp:
         self.run_in_thread(execute_commands_with_delay, commands)
 
     def execute_command(self, command):
-        """Voer een enkel commando uit."""
         try:
             if command.startswith('movej'):
-                # Voer een joint movement uit
-                self.log_message(f"Uitvoeren: {command}")
-                # Voeg hier de logica toe om movej uit te voeren met RTDE
-            elif command.startswith('movel'):
-                # Voer een lineaire movement uit
-                self.log_message(f"Uitvoeren: {command}")
-                # Voeg hier de logica toe om movel uit te voeren met RTDE
+                # regex die alleen de joint-waarden extraheert
+                match = re.match(r'movej\(\[([-\d., ]+)\]', command)
+
+                if match:
+                    # Verwerk de joint waarden
+                    joints_str = match.group(1)
+                    joints = [float(j.strip()) for j in joints_str.split(',')]
+
+                    self.log_message(f"Uitvoeren: movej met joints {joints}")
+
+                    # Move to position
+                    move_to_position(joints)
+
+                else:
+                    self.log_message(f"Kon geen joint-waarden vinden in commando: {command}")
+                    print(f"Kon geen joint-waarden vinden in commando: {command}")
+
+            # elif command.startswith('movel'):
+            #
+            #     match = re.match(r'movel\(pose_trans\(ref_frame,p\[([-\d., ]+)\]\)', command)
+            #     if match:
+            #         position = [float(p.strip()) for p in match.group(1).split(',')]
+            #
+            #
+            #         self.log_message(f"Uitvoeren: movel met positie {position}")
+            #
+            #         if initialize_rtde() and rtde_c:
+            #             rtde_c.moveL(position, speed, acceleration)
+            #             print(f"moveL wordt uitgevoerd met positie: {position}")
+            #         else:
+            #             self.log_message("RTDE control interface is niet verbonden.")
+            #     else:
+            #         self.log_message(f"Kon geen positie vinden in commando: {command}")
+
             elif command.startswith('move_shank'):
-                # Voer een screwdriver actie uit
-                self.log_message(f"Uitvoeren: {command}")
-                # Voeg hier de logica toe om move_shank uit te voeren
+                # Parseer move_shank commando
+                match = re.match(r'move_shank\((\d+)\)', command)
+
+                if match:
+                    value = int(match.group(1))
+                    self.log_message(f"Uitvoeren: move_shank({value})")
+                    move_shank(value)
+                    print("move_shank wordt uitgevoerd")
+
+                else:
+                    self.log_message(f"Ongeldig move_shank commando: {command}")
+
             else:
                 self.log_message(f"Onbekend commando: {command}")
         except Exception as e:
             self.log_message(f"Fout bij uitvoeren van commando: {command}\nFoutmelding: {e}")
-
-
+            print(f"Fout: {e}")
 
     def get_input_values(self, title, prompts):
         """Toon een dialoogvenster om meerdere waarden in te voeren."""
