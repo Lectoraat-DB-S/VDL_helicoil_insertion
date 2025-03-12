@@ -80,7 +80,7 @@ def is_robot_physically_moving(debug=False):
     return False
 
 
-def move_to_position(position, speed=0.5, acceleration=0.3):
+def move_to_position(position, speed=3.0, acceleration=1.8):
     if initialize_rtde() and rtde_c:
         rtde_c.moveJ(position, speed, acceleration)
     else:

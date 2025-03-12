@@ -9,7 +9,7 @@ from rtde_interface import *
 from socketio_interface import *
 from rtde_interface import is_robot_physically_moving
 from requests_interface import check_busy
-
+import cobotrack_interface
 
 class GUIApp:
     def __init__(self, root):
@@ -312,15 +312,77 @@ class GUIApp:
         self.tab_control = ttk.Notebook(self.right_frame)
         self.tab1 = ttk.Frame(self.tab_control)
         self.tab2 = ttk.Frame(self.tab_control)
+        self.tab3 = ttk.Frame(self.tab_control)
+
         self.tab_control.add(self.tab1, text="Status")
         self.tab_control.add(self.tab2, text="Logs")
+        self.tab_control.add(self.tab3, text="Cobotrack")
         self.tab_control.pack(expand=1, fill=tk.BOTH, padx=10, pady=10)
 
         # Status-tab
         self.setup_status_tab()
 
+        # Cobotrack tab
+        self.setup_cobotrack_tab()
+
         # Logs-tab
         self.setup_logs_tab()
+
+    def setup_cobotrack_tab(self):
+        """Setup the Cobotrack control tab."""
+        self.cobotrack_frame = ttk.Frame(self.tab3)
+        self.cobotrack_frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
+
+        # Connection status label
+        self.cobotrack_status_label = tk.Label(self.cobotrack_frame, text="Checking Cobotrack connection...",
+                                               fg="black")
+        self.cobotrack_status_label.pack(pady=5)
+
+        # Slider for movement (0 to 500)
+        self.cobotrack_slider = tk.Scale(self.cobotrack_frame, from_=0, to=500, orient=tk.HORIZONTAL,
+                                         label="Move to Position", length=700)
+        self.cobotrack_slider.pack(pady=5)
+
+        self.move_button = tk.Button(self.cobotrack_frame, text="Move", command=self.move_cobotrack, width=10)
+        self.move_button.pack(pady=5)
+
+        # Stop button
+        self.stop_button = tk.Button(self.cobotrack_frame, text="STOP", command=self.stop_cobotrack, bg="red")
+        self.stop_button.pack(pady=5)
+
+        # Status display
+        self.cobotrack_status_display = tk.Label(self.cobotrack_frame, text="Status: Unknown", fg="black")
+        self.cobotrack_status_display.pack(pady=5)
+
+        # Start status monitoring in a separate thread
+        self.run_in_thread(self.update_cobotrack_status)
+
+    def move_cobotrack(self):
+        """Move Cobotrack to the specified position."""
+        position = self.cobotrack_slider.get()
+        cobotrack_interface.move_to(position, 1)
+
+    def stop_cobotrack(self):
+        """Stop Cobotrack movement."""
+        cobotrack_interface.stop_track()
+
+    def update_cobotrack_status(self):
+        """Update Cobotrack status periodically in a separate thread."""
+        while True:
+            status_word = cobotrack_interface.get_status_word()
+            if status_word:
+                bit_status = {
+                    0: "Motor Turning", 1: "Inverter Ready", 2: "Referenced",
+                    3: "Target Position Reached", 4: "Brake Released", 5: "Error Status",
+                    6: "Limit Switch CW", 7: "Limit Switch CCW"
+                }
+                status_text = " | ".join([bit_status[i] for i in range(8) if status_word[i] == "1"])
+                self.cobotrack_status_display.config(text=f"Status: {status_text}")
+            else:
+                self.cobotrack_status_display.config(text="Status: Connection Lost!", fg="red")
+                self.stop_cobotrack()
+
+            time.sleep(1)  # Update every second
 
     def setup_status_tab(self):
         """Tab for statusinformation."""
@@ -351,10 +413,11 @@ class GUIApp:
         rtde_conn = initialize_rtde()
         rtde_status = "RTDE connected" if rtde_conn else "RTDE not connected"
         socketio_status = "Socket.IO connected" if sio.connected else "Socket.IO not connected"
+        cobotrack_status = "Cobotrack connected" if cobotrack_interface.CobotrackConnection.check_connection() else "Cobotrack not connected"
 
-        self.status_label.config(text=f"Status: {rtde_status} | {socketio_status}")
+        self.status_label.config(text=f"Status: {rtde_status} | {socketio_status} | {cobotrack_status}")
 
-        if rtde_conn and sio.connected:
+        if rtde_conn and sio.connected and cobotrack_status:
             self.status_canvas.itemconfig(self.status_indicator, fill="green")
         else:
             self.status_canvas.itemconfig(self.status_indicator, fill="red")
@@ -368,7 +431,7 @@ class GUIApp:
 
     def _indraaien(self):
         try:
-            indraaien()
+            screw_in()
             self.log_message("Succes", "Indraaien voltooid!")
         except Exception as e:
             self.log_message("Fout", f"Indraaien mislukt: {e}")
@@ -382,7 +445,7 @@ class GUIApp:
 
     def _uitdraaien(self):
         try:
-            uitdraaien()
+            screw_out()
             self.log_message("Success", "Unscrewing success!")
         except Exception as e:
             self.log_message("Fail", f"Unscrewing failed: {e}")
