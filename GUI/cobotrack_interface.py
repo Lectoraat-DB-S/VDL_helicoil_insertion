@@ -10,6 +10,7 @@ TIMEOUT = 5  # Timeout in seconds
 MAX_RETRIES = 10  # Maximum retries for move_to
 RETRY_DELAY = 0.5  # Delay between retries in seconds
 
+
 def connect():
     """Connect to the COBOTRACK system."""
     global cobot_socket, cobot_connected
@@ -18,11 +19,13 @@ def connect():
         cobot_socket.settimeout(TIMEOUT)
         cobot_socket.connect((IP, PORT))
         cobot_connected = True
+        print(f"Connection state: {cobot_connected}")
         return True
     except socket.error as e:
         print(f"Connection error: {e}")
         cobot_connected = False
         return False
+
 
 def disconnect():
     """Disconnect from the COBOTRACK system."""
@@ -32,8 +35,10 @@ def disconnect():
         cobot_socket = None
     cobot_connected = False
 
+
 def send_command(command):
     """Send a command to COBOTRACK and return the response."""
+    global cobot_connected  # Explicitly declare global
     if not cobot_connected or not cobot_socket:
         print("Not connected. Please connect first.")
         return None
@@ -47,16 +52,10 @@ def send_command(command):
         cobot_connected = False
         return None
 
-def check_connection():
-    """Check if the connection to COBOTRACK is active."""
-    if not cobot_connected:
-        print("[Cobotrack] Not connected. Please connect first.")
-        return False
-    response = send_command("COBOTRACK_CONTROL_STATUS_CONNECTED(1)")
-    return "COBOTRACK_CONNECTED:_PASS" in response if response else False
 
-def move_to(location, speed):
+def move_to(location, speed=1):
     """Move COBOTRACK to a given location at the specified speed."""
+    global cobot_connected  # Explicitly declare global
     if not cobot_connected:
         print("[Cobotrack] Cannot move to position. Please connect first.")
         return False
@@ -73,8 +72,10 @@ def move_to(location, speed):
     print("[Cobotrack] Movement failed after maximum retries.")
     return False
 
+
 def get_position(track_id=0):
     """Get the current position of the specified track."""
+    global cobot_connected  # Explicitly declare global
     if not cobot_connected:
         print("[Cobotrack] Cannot go to position. Please connect first.")
         return None
@@ -88,26 +89,103 @@ def get_position(track_id=0):
             return None
     return None
 
+
 def stop_track(track_id=0):
     """Stop the LMK motion."""
+    global cobot_connected  # Explicitly declare global
     if not cobot_connected:
         print("[Cobotrack] Cannot stop. Please connect cobotrack first.")
         return False
     response = send_command(f"COBOTRACK_CONTROL_TRACK_STOP({track_id})")
     return "COBOTRACK_STOP:_PASS" in response if response else False
 
+
 def get_status_word(track_id=0):
     """Get the LMK status word as a string."""
+    global cobot_connected  # Explicitly declare global
     if not cobot_connected:
         print("[Cobotrack] Couldn't fetch status. Please connect first.")
         return None
     response = send_command(f"COBOTRACK_CONTROL_STATUS_WORD({track_id})")
     return response if response else None
 
-def is_connected(nr_of_tracks=1):
+
+def is_connected(nr_of_tracks=0):
     """Check if the LMK controller is connected."""
+    global cobot_connected  # Explicitly declare global
     if not cobot_connected:
         print("[Cobotrack] Not connected. Please connect first.")
         return False
     response = send_command(f"COBOTRACK_CONTROL_STATUS_CONNECTED({nr_of_tracks})")
     return "COBOTRACK_CONNECTED:_PASS" in response if response else False
+
+
+def main():
+    """Test function to demonstrate connecting and moving the COBOTRACK."""
+    try:
+        print("Starting COBOTRACK test...")
+
+        # Connect to COBOTRACK
+        print("Connecting to COBOTRACK...")
+        if not connect():
+            print("Failed to connect. Exiting.")
+            return
+
+        print("Connection successful!")
+
+        # Verify connection
+        if is_connected():
+            print("Connection verified.")
+        else:
+            print("Connection could not be verified. Continuing anyway...")
+
+        # Get current position
+        current_position = get_position()
+        if current_position is not None:
+            print(f"Current position: {current_position}")
+        else:
+            print("Could not retrieve current position.")
+
+        # Move to a new position
+        target_position = 100  # Set your desired position here
+        move_speed = 1  # Set your desired speed here
+
+        print(f"Attempting to move to position {target_position} at speed {move_speed}...")
+        if move_to(target_position, move_speed):
+            print("Movement completed successfully.")
+
+            # Get new position to verify movement
+            new_position = get_position()
+            if new_position is not None:
+                print(f"New position after movement: {new_position}")
+            else:
+                print("Could not retrieve position after movement.")
+        else:
+            print("Movement failed.")
+        time.sleep(50)
+        # Stop the track
+        # print("Stopping the track...")
+        # if stop_track():
+        #     print("Track stopped successfully.")
+        # else:
+        #     print("Failed to stop the track.")
+
+        # Get status
+        status = get_status_word()
+        if status:
+            print(f"COBOTRACK status: {status}")
+        else:
+            print("Could not retrieve status.")
+
+    except Exception as e:
+        print(f"An error occurred during the test: {e}")
+
+    finally:
+        # Always disconnect at the end
+        print("Disconnecting from COBOTRACK...")
+        disconnect()
+        print("Test completed.")
+
+
+if __name__ == "__main__":
+    main()

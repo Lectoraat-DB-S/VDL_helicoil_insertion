@@ -11,21 +11,48 @@ from rtde_interface import is_robot_physically_moving
 from requests_interface import check_busy
 import cobotrack_interface
 
+
 class GUIApp:
     def __init__(self, root):
+        """
+        Initialize the main GUI application.
+        Sets up the window, colors, layout, and starts necessary background threads.
+
+        Args:
+            root: The tkinter root window
+        """
         self.root = root
         self.root.title("VDL_ETG")
         self.root.geometry("1000x600")  # GUI size
 
+        # Define color scheme
+        self.colors = {
+            "primary": "#2c3e50",  # Dark blue/gray
+            "secondary": "#3498db",  # Blue
+            "accent": "#95a5a6",  # Light gray
+            "background": "#ecf0f1",  # Very light gray
+            "danger": "#e74c3c",  # Red for stop buttons
+            "success": "#2ecc71",  # Green for success indicators
+            "text_dark": "#2c3e50",  # Dark text
+            "text_light": "#ecf0f1"  # Light text
+        }
+
+        # Apply the theme
+        self.apply_theme()
+
         # Set the GUI instance before starting Socket.IO
         socketio_interface.gui_app_instance = self
-        print("[INFO] GUI instance set in socketio_interface.")  # Debugging print
+        print("[INFO] GUI instance set in socketio_interface.")
 
-        # Frames for layouts
-        self.left_frame = tk.Frame(root, bg="lightgray", width=300)
+        # Main container frame with padding
+        self.main_container = tk.Frame(root, bg=self.colors["background"], padx=15, pady=15)
+        self.main_container.pack(fill=tk.BOTH, expand=True)
+
+        # Frames for layouts with more modern proportions
+        self.left_frame = tk.Frame(self.main_container, bg=self.colors["background"], width=280)
         self.left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
 
-        self.right_frame = tk.Frame(root, bg="white", width=700)
+        self.right_frame = tk.Frame(self.main_container, bg=self.colors["background"], width=700)
         self.right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         # GUI setup
@@ -37,21 +64,57 @@ class GUIApp:
 
         self.update_screwdriver_data_periodically()  # Start automatic update
 
-        # Check connections periodically
-        # self.check_connections_periodically()
+    def apply_theme(self):
+        """
+        Apply custom styling to the application components.
+        Configures styles for tabs, buttons, and other UI elements.
+        """
+        style = ttk.Style()
+        style.theme_use('clam')  # Use a base theme that's easily customizable
+
+        # Configure the tab appearance
+        style.configure("TNotebook", background=self.colors["background"], borderwidth=0)
+        style.configure("TNotebook.Tab", background=self.colors["accent"],
+                        padding=[10, 5], font=('Arial', 9, 'bold'))
+        style.map("TNotebook.Tab", background=[("selected", self.colors["secondary"])],
+                  foreground=[("selected", self.colors["text_light"])])
+
+        # Configure the frame appearance
+        style.configure("TFrame", background=self.colors["background"])
+
+        # Button styling
+        style.configure("TButton", background=self.colors["secondary"],
+                        foreground=self.colors["text_light"],
+                        font=('Arial', 9), padding=6)
+        style.map("TButton", background=[("active", self.colors["primary"])])
+
+        # Danger button style
+        style.configure("Danger.TButton", background=self.colors["danger"],
+                        foreground=self.colors["text_light"])
+        style.map("Danger.TButton", background=[("active", "#c0392b")])  # Darker red when active
+
+    # ------------------------------------------
+    # Socket.IO and Status Update Functions
+    # ------------------------------------------
 
     def start_socket_io(self):
-        """Connect to the Socket.io server and keep the connection alive"""
+        """
+        Connect to the Socket.io server and keep the connection alive.
+        Retries connection every 5 seconds if failed.
+        """
         while True:
             if connect_to_server():
                 print("[INFO] Connected to server. Waiting for messages...")
                 sio.wait()  # Keep the connection alive
             else:
-                print("[ERROR] Unable to connect. Retrying in 5 seconds...")
+                print("[INFO] Unable to connect. Retrying in 5 seconds...")
                 time.sleep(5)  # Wait before retrying
 
     def update_screwdriver_data(self):
-        """Update the GUI with the latest screwdriver data."""
+        """
+        Update the GUI with the latest screwdriver data.
+        Updates the display with status, shank position, and torque.
+        """
         data = socketio_interface.get_screwdriver_data()
 
         if data:
@@ -63,25 +126,44 @@ class GUIApp:
                 text=f"Screwdriver status: {status}\n"
                      f"Shank position: {shank_position} mm\n"
                      f"Current torque: {current_torque} Nm",
-                fg="green"
+                fg=self.colors["success"]
             )
-            # print("[SUCCESS] GUI updated with new screwdriver data!")  # Debugging print
         else:
-            self.screwdriver_label.config(text="Screwdriver data: Not available", fg="red")
+            self.screwdriver_label.config(text="Screwdriver data: Not available", fg=self.colors["danger"])
 
     def update_screwdriver_data_periodically(self):
-        """Periodically update the screwdriver data in the GUI."""
+        """
+        Periodically update the screwdriver data in the GUI.
+        Sets a timer to refresh data every second.
+        """
         self.update_screwdriver_data()
         self.root.after(1000, self.update_screwdriver_data_periodically)
 
+    # ------------------------------------------
+    # GUI Setup Functions
+    # ------------------------------------------
+
     def setup_left_side(self):
-        self.tab_control = ttk.Notebook(self.left_frame)
+        """
+        Set up the left side of the GUI containing the control panel.
+        Creates tabs for screwdriver functions and general controls.
+        """
+        panel_frame = tk.Frame(self.left_frame, bg=self.colors["background"])
+        panel_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Title for the control panel
+        header_label = tk.Label(panel_frame, text="CONTROL PANEL",
+                                bg=self.colors["primary"], fg=self.colors["text_light"],
+                                font=("Arial", 12, "bold"), pady=8)
+        header_label.pack(fill=tk.X, pady=(0, 15))
+
+        self.tab_control = ttk.Notebook(panel_frame)
         self.tab3 = ttk.Frame(self.tab_control)
         self.tab4 = ttk.Frame(self.tab_control)
         self.tab_control.add(self.tab3, text="SD - Functions")
         self.tab_control.add(self.tab4, text="General")
 
-        self.tab_control.pack(expand=1, fill=tk.BOTH, padx=10, pady=10)
+        self.tab_control.pack(expand=1, fill=tk.BOTH)
 
         # Setup screwdriver functions tab
         self.setup_sd_functions_tab()
@@ -90,116 +172,240 @@ class GUIApp:
         self.setup_generic_tab()
 
     def setup_sd_functions_tab(self):
-        status_frame = tk.Frame(self.tab3)
-        status_frame.pack(pady=10)
-
-        btn_move_shank = tk.Button(status_frame, text="Move shank", command=self.run_move_shank, width=20)
-        btn_move_shank.pack(pady=10)
-
-        btn_pick_screw = tk.Button(status_frame, text="Pick screw", command=self.run_pick_screw, width=20)
-        btn_pick_screw.pack(pady=10)
-
-        btn_premount_screw = tk.Button(status_frame, text="Pre-mount screw", command=self.run_premount_screw, width=20)
-        btn_premount_screw.pack(pady=10)
-
-        btn_tighten_screw = tk.Button(status_frame, text="Tighten screw", command=self.run_tighten_screw, width=20)
-        btn_tighten_screw.pack(pady=10)
-
-        btn_loosen_screw = tk.Button(status_frame, text="Loosen screw", command=self.run_loosen_screw, width=20)
-        btn_loosen_screw.pack(pady=10)
-
-    def _run_operation(self, operation_name, prompts, operation_func):
         """
-        Generic method to run an operation with user input and threading.
-
-        :param operation_name: Name of the operation for dialog and logging
-        :param prompts: List of input prompts
-        :param operation_func: Function to execute the actual operation
+        Set up the screwdriver functions tab.
+        Creates buttons for various screwdriver operations.
         """
-        values = self.get_input_values(operation_name, prompts)
-        if values:
-            self.run_in_thread(self._execute_operation, operation_name, operation_func, *values)
+        status_frame = ttk.Frame(self.tab3)
+        status_frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
 
-    def _execute_operation(self, operation_name, operation_func, *args):
-        """
-        Generic method to execute an operation and log results.
-
-        :param operation_name: Name of the operation for logging
-        :param operation_func: Function to execute the actual operation
-        :param args: Arguments for the operation function
-        """
-        try:
-            operation_func(*args)
-            self.log_message(f"Success {operation_name} completed!")
-        except Exception as e:
-            self.log_message(f"Error {operation_name} failed: {str(e)}")
-
-    def run_move_shank(self):
-        """Execute the move_shank function with an input value."""
-        value = simpledialog.askfloat("Move Shank", "Enter the shank position (0-55):")
-        if value is not None:
-            self.run_in_thread(self._execute_operation, "Move shank", move_shank, value)
-
-    def run_pick_screw(self):
-        """Execute the pick_screw function with input values."""
-        prompts = ["Enter the shank force (N):", "Enter the screwing length (mm):"]
-        self._run_operation("Pick Screw", prompts, pick_screw)
-
-    def run_premount_screw(self):
-        """Execute the premount_screw function with input values."""
-
-        prompts = [
-            "Shank force (N):",
-            "Screwing lengte (mm):",
-            "Torque (Nm):"
+        # Create a more modern grid layout
+        functions = [
+            ("Move shank", self.run_move_shank),
+            ("Pick screw", self.run_pick_screw),
+            ("Pre-mount screw", self.run_premount_screw),
+            ("Tighten screw", self.run_tighten_screw),
+            ("Loosen screw", self.run_loosen_screw)
         ]
-        self._run_operation("Pre-mount Screw", prompts, premount_screw)
 
-    def run_tighten_screw(self):
-        """Run tighten screw with the filled in data"""
-        prompts = [
-            "shank force (N):",
-            "Screwing length (mm):",
-            "Torque (Nm):"
-        ]
-        self._run_operation("Tighten Screw", prompts, tighten_screw)
+        # Create a container for better button spacing
+        button_frame = ttk.Frame(status_frame)
+        button_frame.pack(fill=tk.BOTH, expand=True)
 
-    def run_loosen_screw(self):
-        """Run loosen_screw with the filled in data."""
-        prompts = [
-            "Shank force (N):",
-            "Unscrewing length (mm):"
-        ]
-        self._run_operation("Loosen Screw", prompts, loosen_screw)
+        # Add buttons with consistent styling
+        for i, (text, command) in enumerate(functions):
+            btn = ttk.Button(button_frame, text=text, command=command, width=18)
+            btn.pack(pady=8, padx=5, fill=tk.X)
 
     def setup_generic_tab(self):
-        status_frame = tk.Frame(self.tab4)
-        status_frame.pack(pady=10)
+        """
+        Set up the generic tab with miscellaneous functions.
+        Creates buttons for loading scripts, checking connections, etc.
+        """
+        status_frame = ttk.Frame(self.tab4)
+        status_frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
 
-        """Buttons on leftside of the gui."""
+        # Button container for consistent styling
+        button_frame = ttk.Frame(status_frame)
+        button_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Voeg een knop toe om een scriptbestand te selecteren
-        btn_load_script = tk.Button(status_frame, text="Load Script", command=self.load_script, width=20)
-        btn_load_script.pack(pady=10)
+        # Create buttons with consistent styling
+        btn_load_script = ttk.Button(button_frame, text="Load Script", command=self.load_script, width=18)
+        btn_load_script.pack(pady=8, padx=5, fill=tk.X)
 
-        btn_indraaien = tk.Button(status_frame, text="Tightening", command=self.run_indraaien, width=20)
-        btn_indraaien.pack(pady=10)
+        btn_indraaien = ttk.Button(button_frame, text="Tightening", command=self.run_indraaien, width=18)
+        btn_indraaien.pack(pady=8, padx=5, fill=tk.X)
 
-        btn_uitdraaien = tk.Button(status_frame, text="Unscrewing", command=self.run_uitdraaien, width=20)
-        btn_uitdraaien.pack(pady=10)
+        btn_uitdraaien = ttk.Button(button_frame, text="Unscrewing", command=self.run_uitdraaien, width=18)
+        btn_uitdraaien.pack(pady=8, padx=5, fill=tk.X)
 
-        btn_check_connections = tk.Button(status_frame, text="Check connections", command=self.check_connections,
-                                          width=20)
-        btn_check_connections.pack(pady=10)
+        btn_check_connections = ttk.Button(button_frame, text="Check connections", command=self.check_connections,
+                                           width=18)
+        btn_check_connections.pack(pady=8, padx=5, fill=tk.X)
 
-        btn_refresh_status = tk.Button(status_frame, text="Refresh Status", command=self.update_screwdriver_data,
-                                       width=20)
-        btn_refresh_status.pack(pady=10)
+        btn_refresh_status = ttk.Button(button_frame, text="Refresh Status", command=self.update_screwdriver_data,
+                                        width=18)
+        btn_refresh_status.pack(pady=8, padx=5, fill=tk.X)
+
+    def setup_right_side(self):
+        """
+        Set up the right side of the GUI containing system information.
+        Creates tabs for status, logs, and Cobotrack controls.
+        """
+        # Add a header
+        header_label = tk.Label(self.right_frame, text="SYSTEM INFORMATION",
+                                bg=self.colors["primary"], fg=self.colors["text_light"],
+                                font=("Arial", 12, "bold"), pady=8)
+        header_label.pack(fill=tk.X, pady=(0, 15))
+
+        self.tab_control = ttk.Notebook(self.right_frame)
+        self.tab1 = ttk.Frame(self.tab_control)
+        self.tab2 = ttk.Frame(self.tab_control)
+        self.tab3 = ttk.Frame(self.tab_control)
+
+        self.tab_control.add(self.tab1, text="Status")
+        self.tab_control.add(self.tab2, text="Logs")
+        self.tab_control.add(self.tab3, text="Cobotrack")
+        self.tab_control.pack(expand=1, fill=tk.BOTH)
+
+        # Status-tab
+        self.setup_status_tab()
+
+        # Cobotrack tab
+        self.setup_cobotrack_tab()
+
+        # Logs-tab
+        self.setup_logs_tab()
+
+    def setup_status_tab(self):
+        """
+        Set up the status tab for system information.
+        Displays connection status and screwdriver data.
+        """
+        # Create a card-like container for status info
+        status_card = tk.Frame(self.tab1, bg=self.colors["accent"],
+                               relief=tk.RIDGE, borderwidth=1, padx=15, pady=15)
+        status_card.pack(fill=tk.X, pady=10)
+
+        # Main status section with connection info
+        status_header = tk.Label(status_card, text="Connection Status",
+                                 bg=self.colors["accent"], fg=self.colors["primary"],
+                                 font=("Arial", 10, "bold"))
+        status_header.pack(anchor=tk.W, pady=(0, 10))
+
+        status_frame = tk.Frame(status_card, bg=self.colors["accent"])
+        status_frame.pack(fill=tk.X)
+
+        self.status_canvas = tk.Canvas(status_frame, width=15, height=15,
+                                       bg=self.colors["accent"], highlightthickness=0)
+        self.status_canvas.pack(side=tk.LEFT, padx=(0, 5))
+        self.status_indicator = self.status_canvas.create_oval(2, 2, 13, 13, fill=self.colors["danger"])
+
+        self.status_label = tk.Label(status_frame, text="Status: Checking connections...",
+                                     fg=self.colors["text_dark"], bg=self.colors["accent"],
+                                     font=("Arial", 9))
+        self.status_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        # Screwdriver data in a separate card
+        screwdriver_card = tk.Frame(self.tab1, bg=self.colors["background"],
+                                    relief=tk.GROOVE, borderwidth=1, padx=15, pady=15)
+        screwdriver_card.pack(fill=tk.X, pady=10)
+
+        screwdriver_header = tk.Label(screwdriver_card, text="Screwdriver Data",
+                                      bg=self.colors["background"], fg=self.colors["primary"],
+                                      font=("Arial", 10, "bold"))
+        screwdriver_header.pack(anchor=tk.W, pady=(0, 10))
+
+        self.screwdriver_label = tk.Label(screwdriver_card, text="Screwdriver data: Not available",
+                                          fg=self.colors["text_dark"], bg=self.colors["background"],
+                                          font=("Arial", 9), justify=tk.LEFT)
+        self.screwdriver_label.pack(fill=tk.X)
+
+    def setup_logs_tab(self):
+        """
+        Set up the logs tab for system messages.
+        Creates a scrollable text widget to display logs.
+        """
+        log_frame = ttk.Frame(self.tab2)
+        log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        # Add a header
+        log_header = tk.Label(log_frame, text="System Logs",
+                              bg=self.colors["secondary"], fg=self.colors["text_light"],
+                              font=("Arial", 10, "bold"), pady=5)
+        log_header.pack(fill=tk.X, pady=(0, 10))
+
+        # Text widget with scrollbar for logs
+        log_container = ttk.Frame(log_frame)
+        log_container.pack(fill=tk.BOTH, expand=True)
+
+        scrollbar = ttk.Scrollbar(log_container)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.log_text = tk.Text(log_container, height=20, width=80,
+                                bg=self.colors["background"], fg=self.colors["text_dark"],
+                                font=("Consolas", 9), padx=5, pady=5)
+        self.log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        scrollbar.config(command=self.log_text.yview)
+        self.log_text.config(yscrollcommand=scrollbar.set)
+
+    def setup_cobotrack_tab(self):
+        """
+        Set up the Cobotrack control tab.
+        Creates slider and buttons to control Cobotrack movement.
+        """
+        self.cobotrack_frame = ttk.Frame(self.tab3)
+        self.cobotrack_frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
+
+        # Create a card-like container
+        control_card = tk.Frame(self.cobotrack_frame, bg=self.colors["accent"],
+                                relief=tk.RIDGE, borderwidth=1, padx=10, pady=10)
+        control_card.pack(pady=10, fill=tk.X)
+
+        # Connection status label
+        self.cobotrack_status_label = tk.Label(control_card, text="Checking Cobotrack connection...",
+                                               fg=self.colors["text_dark"], bg=self.colors["accent"],
+                                               font=("Arial", 10, "bold"))
+        self.cobotrack_status_label.pack(pady=5)
+
+        # Slider
+        slider_frame = tk.Frame(control_card, bg=self.colors["accent"], pady=5)
+        slider_frame.pack(fill=tk.X)
+
+        slider_label = tk.Label(slider_frame, text="Move to Position:",
+                                bg=self.colors["accent"], fg=self.colors["text_dark"],
+                                font=("Arial", 9))
+        slider_label.pack(anchor=tk.W)
+
+        self.cobotrack_slider = tk.Scale(slider_frame, from_=0, to=1240, orient=tk.HORIZONTAL,
+                                         length=700, bg=self.colors["accent"],
+                                         highlightthickness=0, troughcolor=self.colors["secondary"],
+                                         sliderrelief=tk.FLAT)
+        self.cobotrack_slider.pack(fill=tk.X, pady=5)
+        # Slider
+
+        # Control buttons in a horizontal layout
+        button_frame = tk.Frame(control_card, bg=self.colors["accent"])
+        button_frame.pack(fill=tk.X, pady=10)
+
+        self.move_button = ttk.Button(button_frame, text="Move", command=self.move_cobotrack, width=10)
+        self.move_button.pack(side=tk.LEFT, padx=5)
+
+        # Stop button with danger styling
+        self.stop_button = ttk.Button(button_frame, text="STOP", command=self.stop_cobotrack,
+                                      style="Danger.TButton", width=10)
+        self.stop_button.pack(side=tk.LEFT, padx=5)
+
+        # Status display
+        status_frame = tk.Frame(self.cobotrack_frame, bg=self.colors["background"],
+                                relief=tk.GROOVE, borderwidth=1, padx=10, pady=10)
+        status_frame.pack(pady=10, fill=tk.X)
+
+        status_header = tk.Label(status_frame, text="Cobotrack Status",
+                                 bg=self.colors["background"], fg=self.colors["primary"],
+                                 font=("Arial", 10, "bold"))
+        status_header.pack(anchor=tk.W, pady=(0, 5))
+
+        self.cobotrack_status_display = tk.Label(status_frame, text="Status: Unknown",
+                                                 bg=self.colors["background"], fg=self.colors["text_dark"],
+                                                 font=("Arial", 9), justify=tk.LEFT, padx=5)
+        self.cobotrack_status_display.pack(fill=tk.X)
+
+        # Start status monitoring in a separate thread
+        self.run_in_thread(self.update_cobotrack_status)
+
+    # ------------------------------------------
+    # Script Loading and Execution Functions
+    # ------------------------------------------
 
     def load_script(self):
-        """Open a window to select a script"""
+        """
+        Open a file dialog to select a script file.
+        Parses and displays the commands found in the script.
+        """
         file_path = filedialog.askopenfilename(
-            title="Selecteer het scriptbestand",
+            title="Select Script File",
             filetypes=(("Python files", "*.py"), ("All files", "*.*"))
         )
         if file_path:
@@ -207,7 +413,15 @@ class GUIApp:
             self.display_commands(commands)
 
     def parse_script(self, file_path):
-        """Parse the script and extract the commands."""
+        """
+        Parse the script file and extract relevant commands.
+
+        Args:
+            file_path: Path to the script file
+
+        Returns:
+            List of extracted commands
+        """
         commands = []
         with open(file_path, 'r') as file:
             for line in file:
@@ -215,21 +429,26 @@ class GUIApp:
                 line = line.strip()
 
                 # Check if line begins with:
-                if line.startswith(('movej', 'movel', 'move_shank')):
+                if line.startswith(('movej', 'movel', 'move_shank', 'move_to')):
                     commands.append(line)
         return commands
 
     def display_commands(self, commands):
-        """Show parsed commands and execute them one by one."""
-        self.log_message("\nParsed commands: ")
+        """
+        Show parsed commands and execute them one by one.
+        Waits for robot/screwdriver readiness between commands.
+
+        Args:
+            commands: List of commands to execute
+        """
+        self.log_message("Parsed commands: ")
 
         def execute_commands_with_delay(commands):
             for i, command in enumerate(commands):
                 self.log_message(f"{i + 1}: {command}")  # log command
 
-                # Check if robot or screwdriver is busy
+                # Check if robot or screwdriver or cobotrack is busy
                 while is_robot_physically_moving(debug=True) or check_busy():
-
                     time.sleep(0.5)  # wait 500ms until robot is ready
                     self.log_message("Waiting until robot is ready")
 
@@ -242,7 +461,16 @@ class GUIApp:
         self.run_in_thread(execute_commands_with_delay, commands)
 
     def execute_command(self, command):
+        """
+        Execute a command from the parsed script.
+        Supports movej and move_shank commands.
+
+        Args:
+            command: Command string to execute
+        """
         try:
+
+            #UR10e movej
             if command.startswith('movej'):
                 # regex that's only filtering the joint values
                 match = re.match(r'movej\(\[([-\d., ]+)\]', command)
@@ -259,115 +487,183 @@ class GUIApp:
 
                 else:
                     self.log_message(f"Couldn't find joint values in command: {command}")
-                    print(f"Couldn't find joint values in command: {command}")
+                    print(f"[UR10E] Couldn't find joint values in command: {command}")
 
-            # elif command.startswith('movel'):
-            #
-            #     match = re.match(r'movel\(pose_trans\(ref_frame,p\[([-\d., ]+)\]\)', command)
-            #     if match:
-            #         position = [float(p.strip()) for p in match.group(1).split(',')]
-            #
-            #
-            #         self.log_message(f"Uitvoeren: movel met positie {position}")
-            #
-            #         if initialize_rtde() and rtde_c:
-            #             rtde_c.moveL(position, speed, acceleration)
-            #             print(f"moveL wordt uitgevoerd met positie: {position}")
-            #         else:
-            #             self.log_message("RTDE control interface is niet verbonden.")
-            #     else:
-            #         self.log_message(f"Kon geen positie vinden in commando: {command}")
-
+            # Screwdriver move_shank
             elif command.startswith('move_shank'):
-                # Parseer move_shank commando
+                # Parse move_shank command
                 match = re.match(r'move_shank\((\d+)\)', command)
 
                 if match:
                     value = int(match.group(1))
                     self.log_message(f"Running: move_shank({value})")
                     move_shank(value)
-                    print("move_shank is being executed")
+                    print("[SCREWDRIVER] move_shank is being executed")
 
                 else:
                     self.log_message(f"Invalid move_shank command: {command}")
+
+            # cobotrack move_to
+            elif command.startswith('move_to'):
+                # Parse move_to command
+                match = re.match(r'move_to\((\d+)\)', command)
+
+                if match:
+                    value = int(match.group(1))
+                    self.log_message(f"Running: move_to({value})")
+                    cobotrack_interface.move_to(value)
+                    print("[COBOTRACK] move_to is being executed")
+
+                else:
+                    self.log_message(f"Invalid move_to command: {command}")
 
             else:
                 self.log_message(f"Unknown command: {command}")
         except Exception as e:
             self.log_message(f"Execution of command failed: {command}\nError message: {e}")
-            print(f"Failed: {e}")
+            print(f"[ERROR] Failed: {e}")
 
-    def get_input_values(self, title, prompts):
-        """show a dialog window to enter characters."""
-        values = []
-        for prompt in prompts:
-            value = simpledialog.askfloat(title, prompt)
-            if value is None:  # If the user clicks on cancel
-                return None
-            values.append(value)
-        return values
+    # ------------------------------------------
+    # Screwdriver Control Functions
+    # ------------------------------------------
 
-    def setup_right_side(self):
-        """Right side of the GUI."""
-        self.tab_control = ttk.Notebook(self.right_frame)
-        self.tab1 = ttk.Frame(self.tab_control)
-        self.tab2 = ttk.Frame(self.tab_control)
-        self.tab3 = ttk.Frame(self.tab_control)
+    def _run_operation(self, operation_name, prompts, operation_func):
+        """
+        Generic method to run an operation with user input and threading.
 
-        self.tab_control.add(self.tab1, text="Status")
-        self.tab_control.add(self.tab2, text="Logs")
-        self.tab_control.add(self.tab3, text="Cobotrack")
-        self.tab_control.pack(expand=1, fill=tk.BOTH, padx=10, pady=10)
+        Args:
+            operation_name: Name of the operation for dialog and logging
+            prompts: List of input prompts
+            operation_func: Function to execute the actual operation
+        """
+        values = self.get_input_values(operation_name, prompts)
+        if values:
+            self.run_in_thread(self._execute_operation, operation_name, operation_func, *values)
 
-        # Status-tab
-        self.setup_status_tab()
+    def _execute_operation(self, operation_name, operation_func, *args):
+        """
+        Generic method to execute an operation and log results.
 
-        # Cobotrack tab
-        self.setup_cobotrack_tab()
+        Args:
+            operation_name: Name of the operation for logging
+            operation_func: Function to execute the actual operation
+            args: Arguments for the operation function
+        """
+        try:
+            operation_func(*args)
+            self.log_message(f"Success: {operation_name} completed!")
+        except Exception as e:
+            self.log_message(f"Error: {operation_name} failed: {str(e)}")
 
-        # Logs-tab
-        self.setup_logs_tab()
+    def run_move_shank(self):
+        """
+        Execute the move_shank function with user input.
+        Opens a dialog to get shank position value.
+        """
+        value = simpledialog.askfloat("Move Shank", "Enter the shank position (0-55):")
+        if value is not None:
+            self.run_in_thread(self._execute_operation, "Move shank", move_shank, value)
 
-    def setup_cobotrack_tab(self):
-        """Setup the Cobotrack control tab."""
-        self.cobotrack_frame = ttk.Frame(self.tab3)
-        self.cobotrack_frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
+    def run_pick_screw(self):
+        """
+        Execute the pick_screw function with user input.
+        Opens dialogs to get shank force and screwing length.
+        """
+        prompts = ["Enter the shank force (N):", "Enter the screwing length (mm):"]
+        self._run_operation("Pick Screw", prompts, pick_screw)
 
-        # Connection status label
-        self.cobotrack_status_label = tk.Label(self.cobotrack_frame, text="Checking Cobotrack connection...",
-                                               fg="black")
-        self.cobotrack_status_label.pack(pady=5)
+    def run_premount_screw(self):
+        """
+        Execute the premount_screw function with user input.
+        Opens dialogs to get shank force, screwing length, and torque.
+        """
+        prompts = [
+            "Shank force (N):",
+            "Screwing lengte (mm):",
+            "Torque (Nm):"
+        ]
+        self._run_operation("Pre-mount Screw", prompts, premount_screw)
 
-        # Slider for movement (0 to 500)
-        self.cobotrack_slider = tk.Scale(self.cobotrack_frame, from_=0, to=500, orient=tk.HORIZONTAL,
-                                         label="Move to Position", length=700)
-        self.cobotrack_slider.pack(pady=5)
+    def run_tighten_screw(self):
+        """
+        Execute the tighten_screw function with user input.
+        Opens dialogs to get shank force, screwing length, and torque.
+        """
+        prompts = [
+            "shank force (N):",
+            "Screwing length (mm):",
+            "Torque (Nm):"
+        ]
+        self._run_operation("Tighten Screw", prompts, tighten_screw)
 
-        self.move_button = tk.Button(self.cobotrack_frame, text="Move", command=self.move_cobotrack, width=10)
-        self.move_button.pack(pady=5)
+    def run_loosen_screw(self):
+        """
+        Execute the loosen_screw function with user input.
+        Opens dialogs to get shank force and unscrewing length.
+        """
+        prompts = [
+            "Shank force (N):",
+            "Unscrewing length (mm):"
+        ]
+        self._run_operation("Loosen Screw", prompts, loosen_screw)
 
-        # Stop button
-        self.stop_button = tk.Button(self.cobotrack_frame, text="STOP", command=self.stop_cobotrack, bg="red")
-        self.stop_button.pack(pady=5)
+    def run_indraaien(self):
+        """
+        Start the screw tightening process in a separate thread.
+        Maintained for compatibility.
+        """
+        threading.Thread(target=self._indraaien, daemon=True).start()
 
-        # Status display
-        self.cobotrack_status_display = tk.Label(self.cobotrack_frame, text="Status: Unknown", fg="black")
-        self.cobotrack_status_display.pack(pady=5)
+    def _indraaien(self):
+        """
+        Execute the screw tightening process and log result.
+        """
+        try:
+            screw_in()
+            self.log_message("Success: Tightening completed!")
+        except Exception as e:
+            self.log_message(f"Error: Tightening failed: {e}")
 
-        # Start status monitoring in a separate thread
-        self.run_in_thread(self.update_cobotrack_status)
+    def run_uitdraaien(self):
+        """
+        Start the screw loosening process in a separate thread.
+        Maintained for compatibility.
+        """
+        threading.Thread(target=self._uitdraaien, daemon=True).start()
+
+    def _uitdraaien(self):
+        """
+        Execute the screw loosening process and log result.
+        """
+        try:
+            screw_out()
+            self.log_message("Success: Unscrewing completed!")
+        except Exception as e:
+            self.log_message(f"Error: Unscrewing failed: {e}")
+
+    # ------------------------------------------
+    # Cobotrack Control Functions
+    # ------------------------------------------
 
     def move_cobotrack(self):
-        """Move Cobotrack to the specified position."""
+        """
+        Move Cobotrack to the position specified by the slider.
+        Uses the cobotrack_interface to control movement.
+        """
         position = self.cobotrack_slider.get()
-        cobotrack_interface.move_to(position, 1)
+        cobotrack_interface.move_to(position, 70)
 
     def stop_cobotrack(self):
-        """Stop Cobotrack movement."""
+        """
+        Stop Cobotrack movement immediately.
+        """
         cobotrack_interface.stop_track()
 
     def update_cobotrack_status(self):
-        """Update Cobotrack status periodically in a separate thread."""
+        """
+        Update Cobotrack status periodically in a background thread.
+        Displays bit status of the Cobotrack system.
+        """
         while True:
             status_word = cobotrack_interface.get_status_word()
             if status_word:
@@ -379,80 +675,65 @@ class GUIApp:
                 status_text = " | ".join([bit_status[i] for i in range(8) if status_word[i] == "1"])
                 self.cobotrack_status_display.config(text=f"Status: {status_text}")
             else:
-                self.cobotrack_status_display.config(text="Status: Connection Lost!", fg="red")
+                self.cobotrack_status_display.config(text="Status: Connection Lost!", fg=self.colors["danger"])
                 self.stop_cobotrack()
 
             time.sleep(1)  # Update every second
 
-    def setup_status_tab(self):
-        """Tab for statusinformation."""
-        status_frame = tk.Frame(self.tab1)
-        status_frame.pack(pady=10)
-
-        self.status_label = tk.Label(status_frame, text="Status: Checking connections...", fg="black")
-        self.status_label.pack(side=tk.LEFT, padx=10)
-
-        self.status_canvas = tk.Canvas(status_frame, width=20, height=20)
-        self.status_canvas.pack(side=tk.LEFT)
-        self.status_indicator = self.status_canvas.create_oval(2, 2, 18, 18, fill="red")
-
-        self.screwdriver_label = tk.Label(self.tab1, text="Screwdriver data: Not available", fg="black")
-        self.screwdriver_label.pack(pady=20)
-
-    def setup_logs_tab(self):
-        """Tab for logs."""
-        self.log_text = tk.Text(self.tab2, height=20, width=80)
-        self.log_text.pack(pady=10)
+    # ------------------------------------------
+    # Connection and Utility Functions
+    # ------------------------------------------
 
     def check_connections_periodically(self):
+        """
+        Check connections periodically and update the display.
+        Sets a timer to repeat the check every 5 seconds.
+        """
         self.check_connections()
         self.root.after(5000, self.check_connections_periodically)  # repeat every 5 secs
 
     def check_connections(self):
-        """Check connections."""
+        """
+        Check connections to RTDE, Socket.IO, and Cobotrack.
+        Updates the status display with connection status.
+        """
         rtde_conn = initialize_rtde()
         rtde_status = "RTDE connected" if rtde_conn else "RTDE not connected"
         socketio_status = "Socket.IO connected" if sio.connected else "Socket.IO not connected"
-        cobotrack_status = "Cobotrack connected" if cobotrack_interface.CobotrackConnection.check_connection() else "Cobotrack not connected"
+        cobotrack_interface.connect()
+        cobotrack_status = "Cobotrack connected" if cobotrack_interface.is_connected() else "Cobotrack not connected"
 
         self.status_label.config(text=f"Status: {rtde_status} | {socketio_status} | {cobotrack_status}")
 
         if rtde_conn and sio.connected and cobotrack_status:
-            self.status_canvas.itemconfig(self.status_indicator, fill="green")
+            self.status_canvas.itemconfig(self.status_indicator, fill=self.colors["success"])
         else:
-            self.status_canvas.itemconfig(self.status_indicator, fill="red")
+            self.status_canvas.itemconfig(self.status_indicator, fill=self.colors["danger"])
             self.log_message("Connection failed!")
 
-    # this needs to be deleted
-    def run_indraaien(self):
-        """Start een schroef indraaien in een aparte thread."""
-        threading.Thread(target=self._indraaien, daemon=True).start()
-    # this needs to be deleted
+    def get_input_values(self, title, prompts):
+        """
+        Show a dialog window to enter multiple values.
 
-    def _indraaien(self):
-        try:
-            screw_in()
-            self.log_message("Succes", "Indraaien voltooid!")
-        except Exception as e:
-            self.log_message("Fout", f"Indraaien mislukt: {e}")
+        Args:
+            title: Dialog window title
+            prompts: List of prompt strings
 
-    # this needs to be deleted
-    def run_uitdraaien(self):
-        """Start een schroef uitdraaien in een aparte thread."""
-        threading.Thread(target=self._uitdraaien, daemon=True).start()
-    # this needs to be deleted
-
-
-    def _uitdraaien(self):
-        try:
-            screw_out()
-            self.log_message("Success", "Unscrewing success!")
-        except Exception as e:
-            self.log_message("Fail", f"Unscrewing failed: {e}")
+        Returns:
+            List of input values or None if canceled
+        """
+        values = []
+        for prompt in prompts:
+            value = simpledialog.askfloat(title, prompt)
+            if value is None:  # If the user clicks on cancel
+                return None
+            values.append(value)
+        return values
 
     def log_message(self, message):
         """Add a message to the logs."""
-        self.log_text.insert(tk.END, f"{message}\n")
+        timestamp = time.strftime("%H:%M:%S", time.localtime())
+        self.log_text.insert(tk.END, f"[{timestamp}] {message}\n")
         self.log_text.see(tk.END)
 
     def run_in_thread(self, func, *args):
