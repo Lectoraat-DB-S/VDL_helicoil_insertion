@@ -106,7 +106,7 @@ def get_status_word(track_id=0):
     if not cobot_connected:
         print("[Cobotrack] Couldn't fetch status. Please connect first.")
         return None
-    response = send_command(f"COBOTRACK_CONTROL_STATUS_WORD({track_id})")
+    response = send_command(f"COBOTRACK_CONTROL_STATUS_WORD_INT({track_id})")
     return response if response else None
 
 
@@ -119,6 +119,99 @@ def is_connected(nr_of_tracks=0):
     response = send_command(f"COBOTRACK_CONTROL_STATUS_CONNECTED({nr_of_tracks})")
     return "COBOTRACK_CONNECTED:_PASS" in response if response else False
 
+#connect to server
+def connect_track(track_id=0):
+
+    command = f"COBOTRACK_CONTROL_NETWORK_CONNECT()"
+    response = send_command(command)
+
+    if response:
+        if "COBOTRACK_CONNECT:_PASS" in response:
+            print("[Cobotrack] Controller connection to the Cobot succeeded.")
+            return True
+        elif "COBOTRACK_CONNECT:_FAIL" in response:
+            print("[Cobotrack] Controller connection to the Cobot failed")
+        else:
+            print(f"[Cobotrack] Unexpected response: {response}")
+    else:
+        print("[Cobotrack] No response received from controller.")
+
+    return False
+
+#identify
+def identify_track(track_id=0):
+
+    command = f"COBOTRACK_CONTROL_NETWORK_IDENTIFY(1, 192.168.0.20)"
+    response = send_command(command)
+
+    if response:
+        if "COBOTRACK_IDENTIFY:_PASS" in response:
+            print("[Cobotrack] Identify passed.")
+            return True
+        elif "COBOTRACK_IDENTIFY:_FAIL" in response:
+            print("[Cobotrack] Identify failed.")
+        elif "COBOTRACK_IDENTIFY:_INVALID_ARGS" in response:
+            print("[Cobotrack] Identify failed due to invalid arguments.")
+        else:
+            print(f"[Cobotrack] Unexpected response: {response}")
+    else:
+        print("[Cobotrack] No response received from controller.")
+
+    return False
+
+#disconnect
+def reference_track(track_id=0):
+
+    command = f"COBOTRACK_CONTROL_NETWORK_DISCONN()"
+    response = send_command(command)
+
+    if response:
+        if "COBOTRACK_DISCONNECT:_PASS" in response:
+            print("[Cobotrack] Disconnect succeeded.")
+            return True
+    else:
+        print("[Cobotrack] No response received from controller.")
+
+    return False
+
+#isconnected
+def isconnected_track(track_id=0):
+
+    command = f"COBOTRACK_CONTROL_STATUS_CONNECTED({track_id})"
+    response = send_command(command)
+
+    if response:
+        if "COBOTRACK_CONNECTED:_PASS" in response:
+            print("[Cobotrack] LMK Controller is connected to the LMK's.")
+            return True
+        elif "COBOTRACK_CONNECTED:_FAIL" in response:
+            print("[Cobotrack] LMK Controller is not connected to the LMK's.")
+        elif "COBOTRACK_CONNECTED:_INVALID_ARGS" in response:
+            print("[Cobotrack] Isconnected check failed due to invalid arguments.")
+        else:
+            print(f"[Cobotrack] Unexpected response: {response}")
+    else:
+        print("[Cobotrack] No response received from controller.")
+
+    return False
+
+#isunlocked
+def isunlocked_track(track_id=0):
+    command = f"COBOTRACK_CONTROL_STATUS_UNLOCKED()"
+    response = send_command(command)
+
+    if response:
+        if "COBOTRACK_UNLOCKED:_PASS" in response:
+            print("[Cobotrack] LMK is unlocked.")
+            return True
+        elif "COBOTRACK_UNLOCKED:_FAIL" in response:
+            print("[Cobotrack] LMK is not unlocked.")
+        else:
+            print(f"[Cobotrack] Unexpected response: {response}")
+    else:
+        print("[Cobotrack] No response received from controller.")
+
+    return False
 
 def main():
     """Test function to demonstrate connecting and moving the COBOTRACK."""
@@ -162,6 +255,9 @@ def main():
                 print("Could not retrieve position after movement.")
         else:
             print("Movement failed.")
+
+        reference_track(0)
+
         time.sleep(50)
         # Stop the track
         # print("Stopping the track...")

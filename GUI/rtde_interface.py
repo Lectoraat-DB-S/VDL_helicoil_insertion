@@ -80,9 +80,15 @@ def is_robot_physically_moving(debug=False):
     return False
 
 
-def move_to_position(position, speed=3.0, acceleration=1.8):
+def move_to_positionj(position, speed=3.0, acceleration=1.8):
     if initialize_rtde() and rtde_c:
         rtde_c.moveJ(position, speed, acceleration)
+    else:
+        raise RuntimeError("RTDE control interface is not connected.")
+
+def move_to_positionl(position, speed=3.0, acceleration=1.8):
+    if initialize_rtde() and rtde_c:
+        rtde_c.moveL(position, speed, acceleration)
     else:
         raise RuntimeError("RTDE control interface is not connected.")
 

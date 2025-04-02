@@ -406,7 +406,7 @@ class GUIApp:
         """
         file_path = filedialog.askopenfilename(
             title="Select Script File",
-            filetypes=(("Python files", "*.py"), ("All files", "*.*"))
+            filetypes=(("Script files", "*.script"), ("All files", "*.*"))
         )
         if file_path:
             commands = self.parse_script(file_path)
@@ -414,23 +414,86 @@ class GUIApp:
 
     def parse_script(self, file_path):
         """
-        Parse the script file and extract relevant commands.
+        Parse the script file by identifying functions and following execution flow
+        from the main program.
 
         Args:
             file_path: Path to the script file
 
         Returns:
-            List of extracted commands
+            List of commands in execution order
+        """
+        # Read the entire script file
+        with open(file_path, 'r') as file:
+            script_content = file.read()
+
+        # Dictionary to store function definitions
+        function_definitions = {}
+
+        # Extract all function definitions
+        function_pattern = re.compile(r'def\s+(\w+)\(\):\s*(.*?)end', re.DOTALL)
+        for match in function_pattern.finditer(script_content):
+            function_name = match.group(1)
+            function_body = match.group(2)
+            function_definitions[function_name] = function_body
+
+        # Find the main program section (after all function definitions)
+        main_program_match = re.search(r'# Main program:(.*?)# End of main program', script_content, re.DOTALL)
+        if main_program_match:
+            main_program = main_program_match.group(1)
+        else:
+            # If no main program markers, find the last function call (usually the entry point)
+            function_call_pattern = re.compile(r'(\w+)\(\)\s*$')
+            match = function_call_pattern.search(script_content)
+            if match:
+                main_function_name = match.group(1)
+                if main_function_name in function_definitions:
+                    main_program = function_definitions[main_function_name]
+                else:
+                    raise ValueError(f"Couldn't find main program or entry function: {main_function_name}")
+            else:
+                # Fall back to the entire script
+                main_program = script_content
+
+        # Extract commands following program flow
+        commands = self.extract_commands_with_flow(main_program, function_definitions)
+
+        return commands
+
+    def extract_commands_with_flow(self, program_section, function_definitions):
+        """
+        Extract commands from a program section, expanding function calls.
+
+        Args:
+            program_section: Section of code to extract commands from
+            function_definitions: Dictionary of function definitions
+
+        Returns:
+            List of commands in execution order
         """
         commands = []
-        with open(file_path, 'r') as file:
-            for line in file:
-                # Remove whitespace at the beginning and at the end
-                line = line.strip()
+        lines = program_section.strip().split('\n')
 
-                # Check if line begins with:
-                if line.startswith(('movej', 'movel', 'move_shank', 'move_to')):
-                    commands.append(line)
+        for line in lines:
+            # Remove whitespace and comments
+            line = line.strip()
+            if line.startswith('#') or not line:
+                continue
+
+            # Check if line is a command we're interested in
+            if line.startswith(('movej', 'movel', 'move_shank', 'move_to')):
+                commands.append(line)
+
+            # Check if line is a function call
+            function_call_match = re.match(r'(\w+)\(\)', line)
+            if function_call_match:
+                function_name = function_call_match.group(1)
+                if function_name in function_definitions:
+                    # Recursively expand function calls
+                    function_commands = self.extract_commands_with_flow(
+                        function_definitions[function_name], function_definitions)
+                    commands.extend(function_commands)
+
         return commands
 
     def display_commands(self, commands):
@@ -441,87 +504,121 @@ class GUIApp:
         Args:
             commands: List of commands to execute
         """
-        self.log_message("Parsed commands: ")
+        print("Parsed commands: ")
 
         def execute_commands_with_delay(commands):
             for i, command in enumerate(commands):
-                self.log_message(f"{i + 1}: {command}")  # log command
+                print(f"{i + 1}: {command}")  # log command
 
                 # Check if robot or screwdriver or cobotrack is busy
                 while is_robot_physically_moving(debug=True) or check_busy():
                     time.sleep(0.5)  # wait 500ms until robot is ready
-                    self.log_message("Waiting until robot is ready")
+                    print("Waiting until robot is ready")
 
                 self.execute_command(command)
 
                 # wait a second before executing the next one
                 time.sleep(1)
 
-        # Run function in a different thread
         self.run_in_thread(execute_commands_with_delay, commands)
 
     def execute_command(self, command):
         """
         Execute a command from the parsed script.
-        Supports movej and move_shank commands.
+        Supports movej, movel, move_shank, and move_to commands.
 
         Args:
             command: Command string to execute
         """
         try:
+            # UR10e movel command
+            if command.startswith('movel'):
+                # Updated regex to match both formats
+                bracket_match = re.match(r'movel\(\[([-\d., ]+)\]', command)
+                p_match = re.match(r'movel\(p\[([-\d., ]+)\]', command)
 
-            #UR10e movej
-            if command.startswith('movej'):
-                # regex that's only filtering the joint values
-                match = re.match(r'movej\(\[([-\d., ]+)\]', command)
-
-                if match:
-                    # Saving joint values
-                    joints_str = match.group(1)
+                if bracket_match:
+                    # Saving joint values from format: movel([2.959485, -2.090817, ...])
+                    joints_str = bracket_match.group(1)
                     joints = [float(j.strip()) for j in joints_str.split(',')]
 
-                    self.log_message(f"Running: movej - joints {joints}")
+                    print(f"Running: movel - joints {joints}")
+                    self.log_message(f"Running: movel - joints {joints}")
 
-                    # Move to position
-                    move_to_position(joints)
+                    move_to_positionl(joints)
+
+                elif p_match:
+                    # Saving joint values from format: movel(p[-0.969933, 0.499379, ...])
+                    joints_str = p_match.group(1)
+                    joints = [float(j.strip()) for j in joints_str.split(',')]
+
+                    print(f"Running: movel - joints {joints}")
+                    self.log_message(f"Running: movel - joints {joints}")
+
+                    move_to_positionl(joints)
 
                 else:
+                    print(f"Couldn't find joint values in command: {command}")
                     self.log_message(f"Couldn't find joint values in command: {command}")
-                    print(f"[UR10E] Couldn't find joint values in command: {command}")
 
-            # Screwdriver move_shank
+            # UR10e movej command
+            elif command.startswith('movej'):
+                # Updated regex to match both formats
+                bracket_match = re.match(r'movej\(\[([-\d., ]+)\]', command)
+                p_match = re.match(r'movej\(p\[([-\d., ]+)\]', command)
+
+                if bracket_match:
+                    # Saving joint values from format: movej([2.959485, -2.090817, ...])
+                    joints_str = bracket_match.group(1)
+                    joints = [float(j.strip()) for j in joints_str.split(',')]
+
+                    print(f"Running: movej - joints {joints}")
+                    self.log_message(f"Running: movej - joints {joints}")
+
+                    move_to_positionj(joints)
+
+                elif p_match:
+                    # Saving joint values from format: movej(p[-0.969933, 0.499379, ...])
+                    joints_str = p_match.group(1)
+                    joints = [float(j.strip()) for j in joints_str.split(',')]
+
+                    print(f"Running: movej - joints {joints}")
+                    self.log_message(f"Running: movej - joints {joints}")
+
+                    move_to_positionj(joints)
+
+                else:
+                    print(f"Couldn't find joint values in command: {command}")
+                    self.log_message(f"Couldn't find joint values in command: {command}")
+
+            # Screwdriver move_shank command
             elif command.startswith('move_shank'):
                 # Parse move_shank command
                 match = re.match(r'move_shank\((\d+)\)', command)
-
                 if match:
                     value = int(match.group(1))
-                    self.log_message(f"Running: move_shank({value})")
+                    print(f"Running: move_shank({value})")
                     move_shank(value)
-                    print("[SCREWDRIVER] move_shank is being executed")
-
                 else:
-                    self.log_message(f"Invalid move_shank command: {command}")
+                    print(f"Invalid move_shank command: {command}")
 
-            # cobotrack move_to
+            # cobotrack move_to command
             elif command.startswith('move_to'):
                 # Parse move_to command
                 match = re.match(r'move_to\((\d+)\)', command)
-
                 if match:
                     value = int(match.group(1))
-                    self.log_message(f"Running: move_to({value})")
-                    cobotrack_interface.move_to(value)
-                    print("[COBOTRACK] move_to is being executed")
-
+                    print(f"Running: move_to({value})")
+                    # cobotrack_interface.move_to(value)
                 else:
-                    self.log_message(f"Invalid move_to command: {command}")
+                    print(f"Invalid move_to command: {command}")
 
             else:
+                print(f"Unknown command: {command}")
                 self.log_message(f"Unknown command: {command}")
+
         except Exception as e:
-            self.log_message(f"Execution of command failed: {command}\nError message: {e}")
-            print(f"[ERROR] Failed: {e}")
+            print(f"Execution of command failed: {command}\nError message: {e}")
 
     # ------------------------------------------
     # Screwdriver Control Functions
@@ -665,20 +762,46 @@ class GUIApp:
         Displays bit status of the Cobotrack system.
         """
         while True:
-            status_word = cobotrack_interface.get_status_word()
-            if status_word:
-                bit_status = {
-                    0: "Motor Turning", 1: "Inverter Ready", 2: "Referenced",
-                    3: "Target Position Reached", 4: "Brake Released", 5: "Error Status",
-                    6: "Limit Switch CW", 7: "Limit Switch CCW"
-                }
-                status_text = " | ".join([bit_status[i] for i in range(8) if status_word[i] == "1"])
-                self.cobotrack_status_display.config(text=f"Status: {status_text}")
+            response = cobotrack_interface.get_status_word()  # Get the full response
+            print(f"Raw response from cobotrack_interface: {response}")  # Debug: Print raw response
+
+            if response:  # Check if the response is not empty
+                print("Response is not empty.")  # Debug: Confirm response is not empty
+                try:
+                    # Extract the integer value from the response string
+                    if response.startswith("COBOTRACK_STATUS_INT:"):
+                        #print("Response starts with 'COBOTRACK_STATUS_INT:'.")  # Debug: Confirm correct prefix
+                        # Split the string to get the integer part
+                        status_word_str = response.split(":")[1].strip()  # Extract the part after the colon
+                        #print(f"Extracted status word string: '{status_word_str}'")  # Debug: Print extracted string
+                        status_word = int(status_word_str)  # Convert to integer
+                        #print(f"Converted status word to integer: {status_word}")  # Debug: Print converted integer
+                    else:
+                        raise ValueError(
+                            "Invalid response format: Response does not start with 'COBOTRACK_STATUS_INT:'")
+
+                    bit_status = {
+                        0: "Motor Turning", 1: "Inverter Ready", 2: "Referenced",
+                        3: "Target Position Reached", 4: "Brake Released", 5: "Error Status",
+                        6: "Limit Switch CW", 7: "Limit Switch CCW"
+                    }
+                    # Extract each bit and check if it's set (1)
+                    active_statuses = [bit_status[i] for i in range(8) if (status_word & (1 << i))]
+                    #print(f"Active statuses: {active_statuses}")  # Debug: Print active statuses
+                    status_text = " | ".join(active_statuses)
+                    #print(f"Final status text: {status_text}")  # Debug: Print final status text
+                    self.cobotrack_status_display.config(text=f"Status: {status_text}")
+                except (ValueError, TypeError, IndexError) as e:
+                    # Handle errors (e.g., invalid format, conversion failure, etc.)
+                    print(f"Error occurred: {e}")  # Debug: Print error
+                    self.cobotrack_status_display.config(text=f"Status: Unknown (Error: {str(e)})",
+                                                         fg=self.colors["danger"])
             else:
+                print("Response is empty or None.")  # Debug: Confirm response is empty
                 self.cobotrack_status_display.config(text="Status: Connection Lost!", fg=self.colors["danger"])
                 self.stop_cobotrack()
 
-            time.sleep(1)  # Update every second
+            time.sleep(0.4)  # Update every second
 
     # ------------------------------------------
     # Connection and Utility Functions
