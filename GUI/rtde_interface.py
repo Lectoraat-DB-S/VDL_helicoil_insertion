@@ -88,7 +88,7 @@ def move_to_positionj(position, speed=3.0, acceleration=1.8):
 
 def move_to_positionl(position, speed=3.0, acceleration=1.8):
     if initialize_rtde() and rtde_c:
-        rtde_c.moveL(position, speed, acceleration)
+        rtde_c.moveL(position, 0.25, 1.2)
     else:
         raise RuntimeError("RTDE control interface is not connected.")
 

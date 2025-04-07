@@ -213,6 +213,9 @@ class GUIApp:
         btn_load_script = ttk.Button(button_frame, text="Load Script", command=self.load_script, width=18)
         btn_load_script.pack(pady=8, padx=5, fill=tk.X)
 
+        btn_stop_script = ttk.Button(button_frame, text="Stop Script", width=18)
+        btn_stop_script.pack(pady=8, padx=5, fill=tk.X)
+
         btn_indraaien = ttk.Button(button_frame, text="Tightening", command=self.run_indraaien, width=18)
         btn_indraaien.pack(pady=8, padx=5, fill=tk.X)
 
@@ -533,12 +536,15 @@ class GUIApp:
         try:
             # UR10e movel command
             if command.startswith('movel'):
-                # Updated regex to match both formats
+                # Standard format: movel([joints])
                 bracket_match = re.match(r'movel\(\[([-\d., ]+)\]', command)
+                # p format: movel(p[joints])
                 p_match = re.match(r'movel\(p\[([-\d., ]+)\]', command)
+                # pose_trans format: movel(pose_trans(ref_frame,p[joints]),accel,speed,blend,etc)
+                pose_trans_match = re.match(r'movel\(pose_trans\([^,]+,p\[([-\d., ]+)\][^)]*\)', command)
 
                 if bracket_match:
-                    # Saving joint values from format: movel([2.959485, -2.090817, ...])
+                    # Format: movel([2.959485, -2.090817, ...])
                     joints_str = bracket_match.group(1)
                     joints = [float(j.strip()) for j in joints_str.split(',')]
 
@@ -548,7 +554,7 @@ class GUIApp:
                     move_to_positionl(joints)
 
                 elif p_match:
-                    # Saving joint values from format: movel(p[-0.969933, 0.499379, ...])
+                    # Format: movel(p[-0.969933, 0.499379, ...])
                     joints_str = p_match.group(1)
                     joints = [float(j.strip()) for j in joints_str.split(',')]
 
@@ -557,39 +563,62 @@ class GUIApp:
 
                     move_to_positionl(joints)
 
+                elif pose_trans_match:
+                    # Format: movel(pose_trans(ref_frame,p[0.282414, 0.145343, ...]),accel,speed,...)
+                    joints_str = pose_trans_match.group(1)
+                    joints = [float(j.strip()) for j in joints_str.split(',')]
+
+                    print(f"Running: movel with pose_trans - joints {joints}")
+                    self.log_message(f"Running: movel with pose_trans - joints {joints}")
+
+                    move_to_positionl(joints)
+
                 else:
                     print(f"Couldn't find joint values in command: {command}")
                     self.log_message(f"Couldn't find joint values in command: {command}")
 
-            # UR10e movej command
+                    # UR10e movej command
             elif command.startswith('movej'):
-                # Updated regex to match both formats
-                bracket_match = re.match(r'movej\(\[([-\d., ]+)\]', command)
-                p_match = re.match(r'movej\(p\[([-\d., ]+)\]', command)
+                    # Standard format: movej([joints])
+                    bracket_match = re.match(r'movej\(\[([-\d., ]+)\]', command)
+                    # p format: movej(p[joints])
+                    p_match = re.match(r'movej\(p\[([-\d., ]+)\]', command)
+                    # pose_trans format: movej(pose_trans(ref_frame,p[joints]),accel,speed,blend,etc)
+                    pose_trans_match = re.match(r'movej\(pose_trans\([^,]+,p\[([-\d., ]+)\][^)]*\)', command)
 
-                if bracket_match:
-                    # Saving joint values from format: movej([2.959485, -2.090817, ...])
-                    joints_str = bracket_match.group(1)
-                    joints = [float(j.strip()) for j in joints_str.split(',')]
+                    if bracket_match:
+                        # Format: movej([2.959485, -2.090817, ...])
+                        joints_str = bracket_match.group(1)
+                        joints = [float(j.strip()) for j in joints_str.split(',')]
 
-                    print(f"Running: movej - joints {joints}")
-                    self.log_message(f"Running: movej - joints {joints}")
+                        print(f"Running: movej - joints {joints}")
+                        self.log_message(f"Running: movej - joints {joints}")
 
-                    move_to_positionj(joints)
+                        move_to_positionj(joints)
 
-                elif p_match:
-                    # Saving joint values from format: movej(p[-0.969933, 0.499379, ...])
-                    joints_str = p_match.group(1)
-                    joints = [float(j.strip()) for j in joints_str.split(',')]
+                    elif p_match:
+                        # Format: movej(p[-0.969933, 0.499379, ...])
+                        joints_str = p_match.group(1)
+                        joints = [float(j.strip()) for j in joints_str.split(',')]
 
-                    print(f"Running: movej - joints {joints}")
-                    self.log_message(f"Running: movej - joints {joints}")
+                        print(f"Running: movej - joints {joints}")
+                        self.log_message(f"Running: movej - joints {joints}")
 
-                    move_to_positionj(joints)
+                        move_to_positionj(joints)
 
-                else:
-                    print(f"Couldn't find joint values in command: {command}")
-                    self.log_message(f"Couldn't find joint values in command: {command}")
+                    elif pose_trans_match:
+                        # Format: movej(pose_trans(ref_frame,p[0.282414, 0.145343, ...]),accel,speed,...)
+                        joints_str = pose_trans_match.group(1)
+                        joints = [float(j.strip()) for j in joints_str.split(',')]
+
+                        print(f"Running: movej with pose_trans - joints {joints}")
+                        self.log_message(f"Running: movej with pose_trans - joints {joints}")
+
+                        move_to_positionj(joints)
+
+                    else:
+                        print(f"Couldn't find joint values in command: {command}")
+                        self.log_message(f"Couldn't find joint values in command: {command}")
 
             # Screwdriver move_shank command
             elif command.startswith('move_shank'):
