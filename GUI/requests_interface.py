@@ -82,9 +82,9 @@ def screw_out():
     import time
     time.sleep(2)
     tighten_screw(screwing_l_mm=15, torque_nm=0.30)
-
+    move_shank(0)
     # Wait until screwdriver is no longer busy
     while check_busy():
         time.sleep(0.001)  # Small delay to prevent CPU overload
 
-    loosen_screw(unscrewing_length_mm=8)
+    #loosen_screw(unscrewing_length_mm=8)
