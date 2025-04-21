@@ -24,6 +24,8 @@ class GUIApp:
         self.root = root
         self.root.title("VDL_ETG")
         self.root.geometry("1000x600")  # GUI size
+        self.running = False # for starting and stopping script
+        self.debug = True
 
         # Define color scheme
         self.colors = {
@@ -213,8 +215,11 @@ class GUIApp:
         btn_load_script = ttk.Button(button_frame, text="Load Script", command=self.load_script, width=18)
         btn_load_script.pack(pady=8, padx=5, fill=tk.X)
 
-        btn_stop_script = ttk.Button(button_frame, text="Stop Script", width=18)
+        btn_stop_script = ttk.Button(button_frame, text="Stop Script", command=self.stop_script, width=18)
         btn_stop_script.pack(pady=8, padx=5, fill=tk.X)
+
+        btn_start_script = ttk.Button(button_frame, text="Start Script", command=self.start_script, width=18)
+        btn_start_script.pack(pady=8, padx=5, fill=tk.X)
 
         btn_indraaien = ttk.Button(button_frame, text="Tightening", command=self.run_indraaien, width=18)
         btn_indraaien.pack(pady=8, padx=5, fill=tk.X)
@@ -229,6 +234,15 @@ class GUIApp:
         btn_refresh_status = ttk.Button(button_frame, text="Refresh Status", command=self.update_screwdriver_data,
                                         width=18)
         btn_refresh_status.pack(pady=8, padx=5, fill=tk.X)
+
+
+    def stop_script(self):
+        self.running = 0
+        self.log_message("Script Stopping !")
+
+    def start_script(self):
+        self.running = 1
+        self.log_message("Script Running !")
 
     def setup_right_side(self):
         """
@@ -411,6 +425,8 @@ class GUIApp:
             title="Select Script File",
             filetypes=(("Script files", "*.script"), ("All files", "*.*"))
         )
+        self.running = 1 # reset var running by setting it
+
         if file_path:
             commands = self.parse_script(file_path)
             self.display_commands(commands)
@@ -513,10 +529,17 @@ class GUIApp:
             for i, command in enumerate(commands):
                 print(f"{i + 1}: {command}")  # log command
 
-                # Check if robot or screwdriver or cobotrack is busy
-                while is_robot_physically_moving(debug=True) or check_busy():
-                    time.sleep(0.5)  # wait 500ms until robot is ready
-                    print("Waiting until robot is ready")
+
+                if not self.debug:
+                # # Check if robot or screwdriver or cobotrack is busy
+                    while is_robot_physically_moving(debug=True) or check_busy() or self.running == 1:
+                        time.sleep(0.5)  # wait 500ms until robot is ready
+                        print("Waiting until robot is ready")
+                else:
+                        # Check if robot or screwdriver or cobotrack is busy
+                    while self.running == 0:
+                            time.sleep(0.5)  # wait 500ms until robot is ready
+                            print("Waiting until robot is ready")
 
                 self.execute_command(command)
 
@@ -551,7 +574,8 @@ class GUIApp:
                     print(f"Running: movel - joints {joints}")
                     self.log_message(f"Running: movel - joints {joints}")
 
-                    move_to_positionl(joints)
+                    if not self.debug:
+                     move_to_positionl(joints)
 
                 elif p_match:
                     # Format: movel(p[-0.969933, 0.499379, ...])
@@ -561,7 +585,8 @@ class GUIApp:
                     print(f"Running: movel - joints {joints}")
                     self.log_message(f"Running: movel - joints {joints}")
 
-                    move_to_positionl(joints)
+                    if not self.debug:
+                     move_to_positionl(joints)
 
                 elif pose_trans_match:
                     # Format: movel(pose_trans(ref_frame,p[0.282414, 0.145343, ...]),accel,speed,...)
@@ -571,7 +596,8 @@ class GUIApp:
                     print(f"Running: movel with pose_trans - joints {joints}")
                     self.log_message(f"Running: movel with pose_trans - joints {joints}")
 
-                    move_to_positionl(joints)
+                    if not self.debug:
+                     move_to_positionl(joints)
 
                 else:
                     print(f"Couldn't find joint values in command: {command}")
@@ -594,7 +620,8 @@ class GUIApp:
                         print(f"Running: movej - joints {joints}")
                         self.log_message(f"Running: movej - joints {joints}")
 
-                        move_to_positionj(joints)
+                        if not self.debug:
+                         move_to_positionj(joints)
 
                     elif p_match:
                         # Format: movej(p[-0.969933, 0.499379, ...])
@@ -604,7 +631,8 @@ class GUIApp:
                         print(f"Running: movej - joints {joints}")
                         self.log_message(f"Running: movej - joints {joints}")
 
-                        move_to_positionj(joints)
+                        if not self.debug:
+                         move_to_positionj(joints)
 
                     elif pose_trans_match:
                         # Format: movej(pose_trans(ref_frame,p[0.282414, 0.145343, ...]),accel,speed,...)
@@ -614,7 +642,8 @@ class GUIApp:
                         print(f"Running: movej with pose_trans - joints {joints}")
                         self.log_message(f"Running: movej with pose_trans - joints {joints}")
 
-                        move_to_positionj(joints)
+                        if not self.debug:
+                         move_to_positionj(joints)
 
                     else:
                         print(f"Couldn't find joint values in command: {command}")
