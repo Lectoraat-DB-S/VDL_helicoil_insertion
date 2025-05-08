@@ -25,7 +25,7 @@ class GUIApp:
         self.root.title("VDL_ETG")
         self.root.geometry("1000x600")  # GUI size
         self.running = False # for starting and stopping script
-        self.debug = True
+        self.debug = False
 
         # Define color scheme
         self.colors = {
@@ -500,7 +500,7 @@ class GUIApp:
                 continue
 
             # Check if line is a command we're interested in
-            if line.startswith(('movej', 'movel', 'move_shank', 'move_to')):
+            if line.startswith(('movej', 'movel', 'move_shank', 'move_to', 'screw_in', 'screw_out')):
                 commands.append(line)
 
             # Check if line is a function call
@@ -551,7 +551,7 @@ class GUIApp:
     def execute_command(self, command):
         """
         Execute a command from the parsed script.
-        Supports movej, movel, move_shank, and move_to commands.
+        Supports movej, movel, move_shank, screw_in, screw_out and move_to commands.
 
         Args:
             command: Command string to execute
@@ -656,9 +656,32 @@ class GUIApp:
                 if match:
                     value = int(match.group(1))
                     print(f"Running: move_shank({value})")
+                    self.log_message(f"Running: move_shank({value})")
                     move_shank(value)
                 else:
                     print(f"Invalid move_shank command: {command}")
+
+            elif command.startswith('screw_in'):
+                # Parse screw_in command
+                match = re.match(r'screw_in\((\d+)\)', command)
+                if match:
+                    value = int(match.group(1))
+                    print(f"Running: screw_in({value})")
+                    self.log_message(f"Running: screw_in({value})")
+                    screw_in()
+                else:
+                    print(f"Invalid screw_in command: {command}")
+
+            elif command.startswith('screw_out'):
+                # Parse screw_out command
+                match = re.match(r'screw_out\((\d+)\)', command)
+                if match:
+                    value = int(match.group(1))
+                    print(f"Running: screw_out({value})")
+                    self.log_message(f"Running: screw_out({value})")
+                    screw_out()
+                else:
+                    print(f"Invalid screw_out command: {command}")
 
             # cobotrack move_to command
             elif command.startswith('move_to'):
@@ -821,10 +844,10 @@ class GUIApp:
         """
         while True:
             response = cobotrack_interface.get_status_word()  # Get the full response
-            print(f"Raw response from cobotrack_interface: {response}")  # Debug: Print raw response
+            #print(f"Raw response from cobotrack_interface: {response}")  # Debug: Print raw response
 
             if response:  # Check if the response is not empty
-                print("Response is not empty.")  # Debug: Confirm response is not empty
+                #print("Response is not empty.")  # Debug: Confirm response is not empty
                 try:
                     # Extract the integer value from the response string
                     if response.startswith("COBOTRACK_STATUS_INT:"):
@@ -855,7 +878,7 @@ class GUIApp:
                     self.cobotrack_status_display.config(text=f"Status: Unknown (Error: {str(e)})",
                                                          fg=self.colors["danger"])
             else:
-                print("Response is empty or None.")  # Debug: Confirm response is empty
+                #print("Response is empty or None.")  # Debug: Confirm response is empty
                 self.cobotrack_status_display.config(text="Status: Connection Lost!", fg=self.colors["danger"])
                 self.stop_cobotrack()
 

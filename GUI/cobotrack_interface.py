@@ -94,7 +94,7 @@ def stop_track(track_id=0):
     """Stop the LMK motion."""
     global cobot_connected  # Explicitly declare global
     if not cobot_connected:
-        print("[Cobotrack] Cannot stop. Please connect cobotrack first.")
+        #print("[Cobotrack] Cannot stop. Please connect cobotrack first.")
         return False
     response = send_command(f"COBOTRACK_CONTROL_TRACK_STOP({track_id})")
     return "COBOTRACK_STOP:_PASS" in response if response else False
@@ -104,7 +104,7 @@ def get_status_word(track_id=0):
     """Get the LMK status word as a string."""
     global cobot_connected  # Explicitly declare global
     if not cobot_connected:
-        print("[Cobotrack] Couldn't fetch status. Please connect first.")
+        #print("[Cobotrack] Couldn't fetch status. Please connect first.")
         return None
     response = send_command(f"COBOTRACK_CONTROL_STATUS_WORD_INT({track_id})")
     return response if response else None

@@ -57,6 +57,10 @@ def loosen_screw(shank_force_n=25, unscrewing_length_mm=25):
     endpoint = f"/api/dc/sd/loosen/{tool_id}/{shank_force_n}/{unscrewing_length_mm}"
     return send_request(endpoint)
 
+def stop():
+    endpoint = f"/api/dc/sd/stop/{tool_id}"
+    return send_request(endpoint)
+
 # Function to check if the screwdriver is busy
 def check_busy():
     data = socketio_interface.get_screwdriver_data()
@@ -66,25 +70,30 @@ def check_busy():
 
 # Function to screw in a screw
 def screw_in():
-    import time
-    time.sleep(2)
-    tighten_screw(screwing_l_mm=14, torque_nm=2)
+    # import time
+    # time.sleep(2)
+    # tighten_screw(screwing_l_mm=14, torque_nm=2)
+    #
+    # # Wait until screwdriver is no longer busy
+    # while check_busy():
+    #     time.sleep(0.001)  # Small delay to prevent CPU overload
+    #
+    # loosen_screw(unscrewing_length_mm=10)
 
-    # Wait until screwdriver is no longer busy
-    while check_busy():
-        time.sleep(0.001)  # Small delay to prevent CPU overload
-
-    loosen_screw(unscrewing_length_mm=10)
-
+    tighten_screw(25,15,0.7)
 
 # Function to unscrew a screw
 def screw_out():
     import time
-    time.sleep(2)
-    tighten_screw(screwing_l_mm=15, torque_nm=0.30)
-    move_shank(0)
-    # Wait until screwdriver is no longer busy
-    while check_busy():
-        time.sleep(0.001)  # Small delay to prevent CPU overload
-
+    # time.sleep(2)
+    #premount_screw(5,1,0.15)
+    loosen_screw(5, 15)
+    # tighten_screw(screwing_l_mm=15, torque_nm=0.30)
+    # move_shank(0)
+    # # Wait until screwdriver is no longer busy
+    #stop()
+    # pickscrew 5mm
+    # loosen_screw 5mm
+    # move_shank(0)
     #loosen_screw(unscrewing_length_mm=8)
+
