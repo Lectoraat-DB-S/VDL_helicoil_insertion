@@ -53,7 +53,7 @@ def tighten_screw(shank_force_n=25, screwing_l_mm=1, torque_nm=2.00):
     return send_request(endpoint)
 
 # Function to loosen a screw
-def loosen_screw(shank_force_n=25, unscrewing_length_mm=25):
+def loosen_screw(shank_force_n=25, unscrewing_length_mm=10):
     endpoint = f"/api/dc/sd/loosen/{tool_id}/{shank_force_n}/{unscrewing_length_mm}"
     return send_request(endpoint)
 
@@ -80,14 +80,15 @@ def screw_in():
     #
     # loosen_screw(unscrewing_length_mm=10)
 
-    tighten_screw(25,15,0.7)
+    #tighten_screw(25,10,0.5)
+    premount_screw()
 
 # Function to unscrew a screw
 def screw_out():
     import time
     # time.sleep(2)
     #premount_screw(5,1,0.15)
-    loosen_screw(5, 15)
+    loosen_screw()
     # tighten_screw(screwing_l_mm=15, torque_nm=0.30)
     # move_shank(0)
     # # Wait until screwdriver is no longer busy

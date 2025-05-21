@@ -215,11 +215,8 @@ class GUIApp:
         btn_load_script = ttk.Button(button_frame, text="Load Script", command=self.load_script, width=18)
         btn_load_script.pack(pady=8, padx=5, fill=tk.X)
 
-        btn_stop_script = ttk.Button(button_frame, text="Stop Script", command=self.stop_script, width=18)
-        btn_stop_script.pack(pady=8, padx=5, fill=tk.X)
-
-        btn_start_script = ttk.Button(button_frame, text="Start Script", command=self.start_script, width=18)
-        btn_start_script.pack(pady=8, padx=5, fill=tk.X)
+        btn_stop_start_script = ttk.Button(button_frame, text="Stop/Start Script", command=self.stop_start_script, width=18)
+        btn_stop_start_script.pack(pady=8, padx=5, fill=tk.X)
 
         btn_indraaien = ttk.Button(button_frame, text="Tightening", command=self.run_indraaien, width=18)
         btn_indraaien.pack(pady=8, padx=5, fill=tk.X)
@@ -227,22 +224,23 @@ class GUIApp:
         btn_uitdraaien = ttk.Button(button_frame, text="Unscrewing", command=self.run_uitdraaien, width=18)
         btn_uitdraaien.pack(pady=8, padx=5, fill=tk.X)
 
-        btn_check_connections = ttk.Button(button_frame, text="Check connections", command=self.check_connections,
+        btn_check_connections = ttk.Button(button_frame, text="Check connections", command=lambda: self.run_in_thread(self.check_connections),
                                            width=18)
         btn_check_connections.pack(pady=8, padx=5, fill=tk.X)
 
-        btn_refresh_status = ttk.Button(button_frame, text="Refresh Status", command=self.update_screwdriver_data,
+        btn_disconnect = ttk.Button(button_frame, text="Disconnect", command=self.disconnect_all,
                                         width=18)
-        btn_refresh_status.pack(pady=8, padx=5, fill=tk.X)
+        btn_disconnect.pack(pady=8, padx=5, fill=tk.X)
 
 
-    def stop_script(self):
-        self.running = 0
-        self.log_message("Script Stopping !")
+    def stop_start_script(self):
+        self.running = not self.running
 
-    def start_script(self):
-        self.running = 1
-        self.log_message("Script Running !")
+        if self.running == 0:
+         self.log_message("Script Stopping !")
+        elif self.running == 1:
+         self.log_message("Script Running !")
+
 
     def setup_right_side(self):
         """
@@ -281,7 +279,7 @@ class GUIApp:
         """
         # Create a card-like container for status info
         status_card = tk.Frame(self.tab1, bg=self.colors["accent"],
-                               relief=tk.RIDGE, borderwidth=1, padx=15, pady=15)
+                               relief=tk.RIDGE, borderwidth=1, padx=15, pady=25)
         status_card.pack(fill=tk.X, pady=10)
 
         # Main status section with connection info
@@ -302,6 +300,12 @@ class GUIApp:
                                      fg=self.colors["text_dark"], bg=self.colors["accent"],
                                      font=("Arial", 9))
         self.status_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        self.loading_label = tk.Label(status_frame, text="", fg="blue", bg=self.colors["accent"],
+                                      font=("Arial", 9, "italic"))
+        self.loading_label.pack(side=tk.LEFT, padx=(10, 0))
+
+
 
         # Screwdriver data in a separate card
         screwdriver_card = tk.Frame(self.tab1, bg=self.colors["background"],
@@ -888,32 +892,64 @@ class GUIApp:
     # Connection and Utility Functions
     # ------------------------------------------
 
-    def check_connections_periodically(self):
-        """
-        Check connections periodically and update the display.
-        Sets a timer to repeat the check every 5 seconds.
-        """
-        self.check_connections()
-        self.root.after(5000, self.check_connections_periodically)  # repeat every 5 secs
 
     def check_connections(self):
-        """
-        Check connections to RTDE, Socket.IO, and Cobotrack.
-        Updates the status display with connection status.
-        """
-        rtde_conn = initialize_rtde()
-        rtde_status = "RTDE connected" if rtde_conn else "RTDE not connected"
-        socketio_status = "Socket.IO connected" if sio.connected else "Socket.IO not connected"
-        cobotrack_interface.connect()
-        cobotrack_status = "Cobotrack connected" if cobotrack_interface.is_connected() else "Cobotrack not connected"
+        """Check connections to RTDE, Socket.IO, and Cobotrack in a responsive, threaded way."""
 
+        def task():
+            self.set_button_state("disabled")
+            try:
+                rtde_conn = initialize_rtde()
+                rtde_status = "RTDE connected" if rtde_conn else "RTDE not connected"
+
+                socketio_status = "Socket.IO connected" if sio.connected else "Socket.IO not connected"
+
+                cobotrack_interface.connect()
+                cobotrack_status = "Cobotrack connected" if cobotrack_interface.is_connected() else "Cobotrack not connected"
+
+                all_connected = rtde_conn and sio.connected and cobotrack_interface.is_connected()
+
+                self.root.after(0, lambda: self.update_connection_ui(
+                    rtde_status, socketio_status, cobotrack_status, all_connected
+                ))
+
+            except Exception as e:
+                self.root.after(0, lambda: self.log_message(f"Connection error: {e}"))
+                self.root.after(0, lambda: self.set_status("Connection failed!", color="danger"))
+            finally:
+                self.root.after(0, self.hide_loading)
+                self.root.after(0, lambda: self.set_button_state("normal"))
+
+        # Show loading message right away
+        self.loading_label.config(text="Connecting...")
+
+        # Run the task after GUI has a chance to update
+        self.root.after(100, lambda: self.run_in_thread(task))
+
+    def show_loading(self, message="Loading..."):
+        self.loading_label.config(text=message)
+
+    def hide_loading(self):
+        self.loading_label.config(text="")
+
+    def set_button_state(self, state):
+        # Disable/enable "Check connections" button
+        for child in self.tab4.winfo_children():
+            if isinstance(child, ttk.Frame):  # Check in the frame where the buttons are
+                for btn in child.winfo_children():
+                    if isinstance(btn, ttk.Button) and btn["text"] == "Check connections":
+                        btn.config(state=state)
+
+    def update_connection_ui(self, rtde_status, socketio_status, cobotrack_status, all_connected):
         self.status_label.config(text=f"Status: {rtde_status} | {socketio_status} | {cobotrack_status}")
-
-        if rtde_conn and sio.connected and cobotrack_status:
-            self.status_canvas.itemconfig(self.status_indicator, fill=self.colors["success"])
-        else:
-            self.status_canvas.itemconfig(self.status_indicator, fill=self.colors["danger"])
+        color = "success" if all_connected else "danger"
+        self.status_canvas.itemconfig(self.status_indicator, fill=self.colors[color])
+        if not all_connected:
             self.log_message("Connection failed!")
+
+    def set_status(self, text, color="grey"):
+        self.status_label.config(text=f"Status: {text}")
+        self.status_canvas.itemconfig(self.status_indicator, fill=self.colors.get(color, "grey"))
 
     def get_input_values(self, title, prompts):
         """
@@ -939,6 +975,22 @@ class GUIApp:
         timestamp = time.strftime("%H:%M:%S", time.localtime())
         self.log_text.insert(tk.END, f"[{timestamp}] {message}\n")
         self.log_text.see(tk.END)
+
+    def disconnect_all(self):
+        global rtde_connected
+
+        if rtde_connected:
+            disconnect_rtde()
+
+        if sio.connected:
+            sio.disconnect()
+
+        if cobotrack_interface.is_connected():
+            cobotrack_interface.disconnect()
+
+        self.status_label.config(text="Status: Disconnected")
+        self.status_canvas.itemconfig(self.status_indicator, fill=self.colors["danger"])
+        self.log_message("Disconnected all systems.")
 
     def run_in_thread(self, func, *args):
         """execute function in a different thread."""

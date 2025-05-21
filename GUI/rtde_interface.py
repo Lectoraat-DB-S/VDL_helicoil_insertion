@@ -30,6 +30,25 @@ joint_position_1 = [-0.029192272816793263, -0.7469827693751832, 1.31750947633852
 joint_position_2 = [-0.02115327516664678, -0.7476166051677247, 1.3301270643817347, -0.5728175205043335, 1.1413614749908447, 4.7532830238342285]
 
 
+def disconnect_rtde():
+    """Disconnect all RTDE interfaces and reset their state."""
+    global rtde_r, rtde_c, rtde_i, rtde_connected
+
+    try:
+        if rtde_r:
+            rtde_r.disconnect()
+            rtde_r = None
+        if rtde_c:
+            rtde_c.disconnect()
+            rtde_c = None
+        if rtde_i:
+            rtde_i.disconnect()
+            rtde_i = None
+    except Exception as e:
+        print(f"Error while disconnecting RTDE: {e}")
+    finally:
+        rtde_connected = False
+
 def is_robot_physically_moving(debug=False):
     """
     Check if the robot is physically moving, regardless of the program status.
