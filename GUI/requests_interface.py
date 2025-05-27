@@ -1,8 +1,11 @@
+import time
+
 import requests
+import rtde_io
 
 import socketio_interface
 from socketio_interface import get_screwdriver_data
-
+from rtde_interface import *
 
 # Basic data
 compute_box_ip = "192.168.0.15"
@@ -43,7 +46,7 @@ def pick_screw(shank_force_n=25, screwing_l_mm=10):
     return send_request(endpoint)
 
 # Function to pre-mount a screw
-def premount_screw(shank_force_n=25, screwing_l_mm=25, torque_nm=0.5):
+def premount_screw(shank_force_n=25, screwing_l_mm=25, torque_nm=0.7):
     endpoint = f"/api/dc/sd/premount/{tool_id}/{shank_force_n}/{screwing_l_mm}/{torque_nm}"
     return send_request(endpoint)
 
@@ -53,7 +56,7 @@ def tighten_screw(shank_force_n=25, screwing_l_mm=1, torque_nm=2.00):
     return send_request(endpoint)
 
 # Function to loosen a screw
-def loosen_screw(shank_force_n=25, unscrewing_length_mm=10):
+def loosen_screw(shank_force_n=25, unscrewing_length_mm=55):
     endpoint = f"/api/dc/sd/loosen/{tool_id}/{shank_force_n}/{unscrewing_length_mm}"
     return send_request(endpoint)
 
@@ -69,7 +72,7 @@ def check_busy():
       return data.get("screwdriver_busy", False) or data.get("shank_busy", False)
 
 # Function to screw in a screw
-def screw_in():
+def screw_in(mode):
     # import time
     # time.sleep(2)
     # tighten_screw(screwing_l_mm=14, torque_nm=2)
@@ -81,7 +84,32 @@ def screw_in():
     # loosen_screw(unscrewing_length_mm=10)
 
     #tighten_screw(25,10,0.5)
-    premount_screw()
+     if mode == 0: # inschroeven bij oppak locatie
+        premount_screw()
+        time.sleep(1.85) # delay voor hoelang de screwdriver moet schroeven voordat de klem open gaat
+
+        rtde_i = rtde_io.RTDEIOInterface("192.168.0.20")
+        rtde_io.RTDEIOInterface.setStandardDigitalOut(rtde_i,1,1) # 1 is open
+
+        time.sleep(5)
+
+
+
+        #schuif open
+        rtde_io.RTDEIOInterface.setStandardDigitalOut(rtde_i, 0, 1)  # 1 is open
+        time.sleep(1)
+        #klem dicht
+        rtde_io.RTDEIOInterface.setStandardDigitalOut(rtde_i, 1, 0)  # 1 is dicht
+        time.sleep(1)
+        #schuif dicht
+        rtde_io.RTDEIOInterface.setStandardDigitalOut(rtde_i, 0, 0)  # 0 is dicht
+
+        return
+
+     else: # inschroeven in testmodel
+        premount_screw(torque_nm=0.9)
+
+
 
 # Function to unscrew a screw
 def screw_out():
@@ -97,4 +125,4 @@ def screw_out():
     # loosen_screw 5mm
     # move_shank(0)
     #loosen_screw(unscrewing_length_mm=8)
-
+    return

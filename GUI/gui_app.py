@@ -672,7 +672,7 @@ class GUIApp:
                     value = int(match.group(1))
                     print(f"Running: screw_in({value})")
                     self.log_message(f"Running: screw_in({value})")
-                    screw_in()
+                    screw_in(value)
                 else:
                     print(f"Invalid screw_in command: {command}")
 

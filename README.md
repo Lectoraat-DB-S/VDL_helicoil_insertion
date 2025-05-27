@@ -1,50 +1,90 @@
 # template-repository 🦾
-codering
-Tijdens het opleveren van code zien we graag dat er een README bestand wordt meegeleverd, dit maakt het gemakkelijker voor een ander om met jouw code verder te gaan of er gebruik van te maken.
-Deze README beschrijft het project, wat je nodig hebt om de code te gebruiken en hoe je de code kunt gebruiken. Uiteraard kan dit ietsje afwijken aan de hand van welke taal je hebt geprogrammeerd, maar blijf het liefst zo dicht bij mogelijk bij deze standaarden.
 
-De volgende dingen zien we graag in een README:
-- beschrijving: graag zien we een korte beschrijving van je project. dus een korte uitleg wat je code doet als je het gebruikt.
-De code VDL_helicoil_insertion is een HMI die gebruikt wordt om een ur10e cobot aan te sturen met een Onrobot Screwdriver en een Cobotrack. De HMI wordt voornamelijk gebruikt om de componenten vanuit een PC aan te sturen wat zorgt voor een flexibele toepassing. Dat wil zeggen een model met >300 gaten is moeilijk om handmatig via polyscope te doen, en dit wordt omzeild met dit oplossing.
+This repository contains the code for the VDL_helicoil_insertion HMI, designed to control a UR10e cobot with an OnRobot Screwdriver and a Cobotrack. This HMI offers flexible control of these components from a PC, streamlining complex tasks such as inserting screws into models with numerous holes that would be difficult to perform manually via Polyscope.
 
+---
 
-- imports en versies: graag zien we een lijst met alle imports, packages, software, etc die je hebt gebruikt met de versies. Denk hierbij aan je python versie, dat je iets met "pip install" hebt geinstalleerd of dat je ubuntu 23.04 als operating system hebt gebruikt (dus ook welke versie je hebt geinstalleerd). (test dus ook je code op een andere laptop!!! hierdoor weet je zeker dat je alles genoteerd hebt)
-Anaconda python interpreter py version - 3.12.9
-ur-rtde 1.6.0
-websocket-client 1.8.0
-sockets 1.0.0
-requests 2.32.3
-tkinter
-time
-re
-threading
-python-socketio 5.3.0
-numpy-base 2.2.2
+## **Code Guidelines**
 
-- architectuur: graag zien we een korte beschrijving van de architectuur van je project. welke bestanden hebben welke bestanden nodig en wat kun je in welk bestand vinden.
-cobotrack_interface - hierin worden alle request functions beschreven die de cobotrack aansturen en wordt gebruikt vanuit de gui_app om functies aan te roepen
-gui_app - hierin wordt de logica van de HMI beschreven, onder andere alle code logica, wat wanneer aangeroepen wordt, en welke bestanden allemaal worden gebruikt
-main - wordt alleen gebruikt voor de initializatie van de HMI
-requests_interface - hierin worden alle screwdriver requests functies beschreven die requests sturen naar de Onrobot API, onder andere specifieke screwdriver functies te starten.
-rtde_interface - hierin worden alle cobot requests functies beschreven die voor beweging en status checking zorgen over de Cobot. Ook worden hier de connectie functies beschreven.
-socketio_interface - hierin wordt de SocketIO connectie protocol beschreven en geinitialiseerd voor een real-time status connectie naar de Onrobot Screwdriver
+When delivering code, we highly recommend including a `README` file. This makes it easier for others to understand, use, or build upon your work. This `README` describes the project, its dependencies, and how to use the code. While minor deviations are acceptable based on the programming language used, please try to adhere as closely as possible to these standards.
 
-- reference: graag zien we een lijst met welke code je niet zelf hebt gemaakt of gebaseerd hebt op een ander zijn code met daarbij een link naar de originele code en een datum waarop je die code hebt geraadpleegd. Dit zorgt ervoor dat de juiste mensen credit krijgen. (let op, ook als je een functie ergens vandaan haalt en aanpast hoor je nog steeds te zeggen wie daar credit voor krijgt).
-Reference: alle code is zelf geschreven aan de hand van de API beschrijvingen van de libraries, Commentaar in de code is opgesteld met gebruik van ChatGPT.
+Here's what we'd like to see in a `README`:
 
-- usage: op het moment dat je extra hardware zoals een robot gebruikt is het fijn als er ook iets uitgelegd wordt over hoe je alles hebt aangesloten en opgestart. Misschien is het wel van belang dat je eerst het programma op de cobot start voordat je de python code op je laptop start.
-Polyscope opstarten van de Cobot, dat kan niet vanuit de PC gedaan worden en in de instellingen zorgen dat de IP en gateway, subnet mask goed staat ingesteld voor verdere uitleg raadpleeg de onderzoek document.
+---
 
-- commenting: in code is het vrij normaal om comments te gebruiken om je code duidelijker te maken. Graag zien we dan ook dat dit gedaan wordt.
-	- functie beschrijving: Liefst zien we dat er per functie met een comment uitgelegd wordt hoe de functie werkt en waarvoor ie bedoeld wordt (dit kan vaak in 1 zin). mocht de functie lang zijn dan zien we ook graag comments tussendoor.
-	- Bestand beschrijving: Liefst zien we bovenaan elk bestand dat er een korte beschrijving staat van welke functies er in het bestand geprogrammeerd zijn.
-	- Variabele beschrijving:
+## **Description**
 
-Een ReadMe schrijf je in Markdown. in de volgende link vind je wat voorbeelden over hoe je deze kunt stylen:
-https://github.com/lifeparticle/Markdown-Cheatsheet
+The `VDL_helicoil_insertion` is a Human-Machine Interface (HMI) built to control a UR10e cobot, an OnRobot Screwdriver, and a Cobotrack. This HMI enables flexible component control directly from a PC, which is particularly beneficial for complex tasks. For instance, models with over 300 holes are challenging to process manually using Polyscope; this solution effectively circumvents that issue.
 
-mocht je wat inspiratie willen kun je op de github hieronder even kijken.
-https://github.com/matiassingers/awesome-readme
+---
 
-https://integrity.mit.edu/handbook/academic-integrity-handbook
+## **Dependencies & Versions**
 
+Below is a list of all necessary imports, packages, and software with their respective versions. Please verify your code on another machine to ensure all dependencies are accurately noted.
+
+* **Anaconda Python Interpreter:** 3.12.9
+* `ur-rtde`: 1.6.0
+* `websocket-client`: 1.8.0
+* `sockets`: 1.0.0
+* `requests`: 2.32.3
+* `tkinter`
+* `time`
+* `re`
+* `threading`
+* `python-socketio`: 5.3.0
+* `numpy-base`: 2.2.2
+
+---
+
+## **Architecture**
+
+This section describes the architecture of the project, outlining the purpose of each file and its interdependencies.
+
+* **`cobotrack_interface`**: Contains functions for sending requests to control the Cobotrack, called by `gui_app`.
+* **`gui_app`**: Implements the core logic of the HMI, managing function calls and file interactions.
+* **`main`**: Solely responsible for the initialization of the HMI.
+* **`requests_interface`**: Defines functions for sending requests to the OnRobot Screwdriver API, including specific screwdriver operations.
+* **`rtde_interface`**: Manages cobot movement and status checks, along with connection functions.
+* **`socketio_interface`**: Describes and initializes the SocketIO connection protocol for real-time status updates from the OnRobot Screwdriver.
+
+---
+
+## **References**
+
+All code in this repository has been self-written based on the API descriptions of the respective libraries. Comments within the code were generated with the assistance of ChatGPT.
+
+* No external code or adapted functions were used.
+
+---
+
+## **Usage**
+
+When using external hardware such as a robot, it's crucial to understand the connection and startup procedures. For example, it might be necessary to start the program on the cobot before launching the Python code on your laptop.
+
+1.  **Start Polyscope on the Cobot:** This cannot be done from the PC.
+2.  **Configure Network Settings:** Ensure the IP address, gateway, and subnet mask are correctly configured in the cobot's settings. For detailed instructions, please consult the research document.
+
+---
+
+## **Commenting Guidelines**
+
+Clear and consistent commenting is essential for readable code. We expect the following:
+
+* **Function Description**: Each function should have a concise comment (preferably a single sentence) explaining its purpose and how it works. For longer functions, include additional comments within the function body.
+* **File Description**: At the top of each file, provide a brief description of the functions contained within it.
+* **Variable Description**: (Implicit in clear code, but explicit if a variable's purpose isn't immediately obvious).
+
+---
+
+## **Markdown Resources**
+
+For styling examples and inspiration for your `README`, refer to the following links:
+
+* [Markdown Cheatsheet](https://github.com/lifeparticle/Markdown-Cheatsheet)
+* [Awesome README](https://github.com/matiassingers/awesome-readme)
+
+---
+
+**Academic Integrity Reminder:**
+
+* [MIT Academic Integrity Handbook](https://integrity.mit.edu/handbook/academic-integrity-handbook)

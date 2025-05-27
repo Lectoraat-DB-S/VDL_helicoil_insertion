@@ -1,3 +1,4 @@
+import rtde_control
 import rtde_receive
 import rtde_io
 from rtde_control import RTDEControlInterface as RTDEControl
@@ -5,7 +6,6 @@ from rtde_control import RTDEControlInterface as RTDEControl
 # RTDE interfaces (lazy initialization)
 rtde_r = None
 rtde_c = None
-rtde_i = None
 rtde_connected = False
 
 def initialize_rtde():
@@ -15,13 +15,12 @@ def initialize_rtde():
         try:
             rtde_r = rtde_receive.RTDEReceiveInterface("192.168.0.20")
             rtde_c = RTDEControl("192.168.0.20")
-            rtde_i = rtde_io.RTDEIOInterface("192.168.0.20")
+
             rtde_connected = True
         except Exception as e:
             print(f"RTDE connection error: {e}")
             rtde_r = None
             rtde_c = None
-            rtde_i = None
             rtde_connected = False
     return rtde_connected
 
@@ -41,9 +40,6 @@ def disconnect_rtde():
         if rtde_c:
             rtde_c.disconnect()
             rtde_c = None
-        if rtde_i:
-            rtde_i.disconnect()
-            rtde_i = None
     except Exception as e:
         print(f"Error while disconnecting RTDE: {e}")
     finally:
