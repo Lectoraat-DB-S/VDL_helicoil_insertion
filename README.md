@@ -40,6 +40,8 @@ Below is a list of all necessary imports, packages, and software with their resp
 
 This section describes the architecture of the project, outlining the purpose of each file and its interdependencies.
 
+GUI folder contents:
+
 * **`cobotrack_interface`**: Contains functions for sending requests to control the Cobotrack, called by `gui_app`.
 * **`gui_app`**: Implements the core logic of the HMI, managing function calls and file interactions.
 * **`main`**: Solely responsible for the initialization of the HMI.
@@ -47,6 +49,14 @@ This section describes the architecture of the project, outlining the purpose of
 * **`rtde_interface`**: Manages cobot movement and status checks, along with connection functions.
 * **`socketio_interface`**: Describes and initializes the SocketIO connection protocol for real-time status updates from the OnRobot Screwdriver.
 
+Robodk folder contents:
+
+* **`Instellingen folder`**: Contains every setting that should be set up in robodk
+
+* **`csv_importernewest`**: Contains code for importing csv targets in robodk
+* **`rdk file for robodk`**: robodk file where the setup is
+* **`Generatefaceapproaches`**: Contains code for generating face approaches, generating links, creating sub and main programs
+* 
 ---
 
 ## **References**
@@ -66,25 +76,3 @@ When using external hardware such as a robot, it's crucial to understand the con
 
 ---
 
-## **Commenting Guidelines**
-
-Clear and consistent commenting is essential for readable code. We expect the following:
-
-* **Function Description**: Each function should have a concise comment (preferably a single sentence) explaining its purpose and how it works. For longer functions, include additional comments within the function body.
-* **File Description**: At the top of each file, provide a brief description of the functions contained within it.
-* **Variable Description**: (Implicit in clear code, but explicit if a variable's purpose isn't immediately obvious).
-
----
-
-## **Markdown Resources**
-
-For styling examples and inspiration for your `README`, refer to the following links:
-
-* [Markdown Cheatsheet](https://github.com/lifeparticle/Markdown-Cheatsheet)
-* [Awesome README](https://github.com/matiassingers/awesome-readme)
-
----
-
-**Academic Integrity Reminder:**
-
-* [MIT Academic Integrity Handbook](https://integrity.mit.edu/handbook/academic-integrity-handbook)

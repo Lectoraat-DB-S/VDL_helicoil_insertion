@@ -1,2 +1,0 @@
-bij generate approach point targets kunnen gefixt worden. 
- - van approach point elke target eerst testen en als dat niet goed gaat dan target draaien totdat er geen collision is 

@@ -73,27 +73,19 @@ def check_busy():
 
 # Function to screw in a screw
 def screw_in(mode):
-    # import time
-    # time.sleep(2)
-    # tighten_screw(screwing_l_mm=14, torque_nm=2)
-    #
-    # # Wait until screwdriver is no longer busy
-    # while check_busy():
-    #     time.sleep(0.001)  # Small delay to prevent CPU overload
-    #
-    # loosen_screw(unscrewing_length_mm=10)
 
-    #tighten_screw(25,10,0.5)
      if mode == 0: # inschroeven bij oppak locatie
+
         premount_screw()
         time.sleep(1.85) # delay voor hoelang de screwdriver moet schroeven voordat de klem open gaat
 
+        # make connection with the rtdeio interface for de pickup station
         rtde_i = rtde_io.RTDEIOInterface("192.168.0.20")
         rtde_io.RTDEIOInterface.setStandardDigitalOut(rtde_i,1,1) # 1 is open
 
-        time.sleep(5)
+        time.sleep(5) # delay to make sure screw is picked up
 
-
+        move_shank(0)
 
         #schuif open
         rtde_io.RTDEIOInterface.setStandardDigitalOut(rtde_i, 0, 1)  # 1 is open
@@ -103,26 +95,34 @@ def screw_in(mode):
         time.sleep(1)
         #schuif dicht
         rtde_io.RTDEIOInterface.setStandardDigitalOut(rtde_i, 0, 0)  # 0 is dicht
-
         return
 
-     else: # inschroeven in testmodel
-        premount_screw(torque_nm=0.9)
+     elif mode == 20: # inschroeven in testmodel
+
+        premount_screw(torque_nm=1.3)
+
+        time.sleep(3)
+
+        move_shank(0)
+
+     elif mode == 10:
+        move_shank(0)
+
+        time.sleep(3)
+
+        premount_screw(torque_nm=0.3)
+
+        time.sleep(3)
+
+        move_shank(0)
+
 
 
 
 # Function to unscrew a screw
 def screw_out():
-    import time
-    # time.sleep(2)
-    #premount_screw(5,1,0.15)
     loosen_screw()
-    # tighten_screw(screwing_l_mm=15, torque_nm=0.30)
-    # move_shank(0)
-    # # Wait until screwdriver is no longer busy
-    #stop()
-    # pickscrew 5mm
-    # loosen_screw 5mm
-    # move_shank(0)
-    #loosen_screw(unscrewing_length_mm=8)
+    time.sleep(5)
+    move_shank(0)
+    time.sleep(5)
     return

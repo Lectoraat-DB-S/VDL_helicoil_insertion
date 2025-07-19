@@ -16,6 +16,7 @@ def initialize_rtde():
             rtde_r = rtde_receive.RTDEReceiveInterface("192.168.0.20")
             rtde_c = RTDEControl("192.168.0.20")
 
+
             rtde_connected = True
         except Exception as e:
             print(f"RTDE connection error: {e}")
@@ -23,10 +24,6 @@ def initialize_rtde():
             rtde_c = None
             rtde_connected = False
     return rtde_connected
-
-# Define joint positions to move between
-joint_position_1 = [-0.029192272816793263, -0.7469827693751832, 1.3175094763385218, -0.5753325384906312, 0.9964199662208557, 4.718315124511719]
-joint_position_2 = [-0.02115327516664678, -0.7476166051677247, 1.3301270643817347, -0.5728175205043335, 1.1413614749908447, 4.7532830238342285]
 
 
 def disconnect_rtde():
@@ -94,8 +91,8 @@ def is_robot_physically_moving(debug=False):
     # If neither method detects movement, the robot is idle
     return False
 
-
-def move_to_positionj(position, speed=3.0, acceleration=1.8):
+                                    # 3                 # 1.8
+def move_to_positionj(position, speed=3, acceleration=1.8):
     if initialize_rtde() and rtde_c:
         rtde_c.moveJ(position, speed, acceleration)
     else:
@@ -103,7 +100,7 @@ def move_to_positionj(position, speed=3.0, acceleration=1.8):
 
 def move_to_positionl(position, speed=3.0, acceleration=1.8):
     if initialize_rtde() and rtde_c:
-        rtde_c.moveL(position, 0.25, 1.2)
+        rtde_c.moveL(position, 3, 1.8)
     else:
         raise RuntimeError("RTDE control interface is not connected.")
 
