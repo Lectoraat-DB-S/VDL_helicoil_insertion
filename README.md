@@ -75,14 +75,15 @@ When using external hardware such as a robot, it's crucial to understand the con
 1. **Start Polyscope on the Cobot:** This cannot be done from the PC.
 2. **Configure Network Settings:** Ensure the IP address and subnet mask are correctly configured in the cobot's settings according to the following settings:
 
+**PC:**
 	- **Subnet Mask:** 255.255.255.0
 	- **Cobot:** 192.168.12.120
 	- **Screwdriver:** 192.168.12.15
 	- **HMI:** 192.168.12.137 (PC IP address used)
 	- **Camera:** 192.168.12.100
-    - **MIR:** 192.168.12.24 (not controlled in this HMI)
 
-
+**MIR:**
+    - **IP address:** 192.168.12.24 (not controlled in this HMI)
 	- **Subnet mask:** 255.255.0.0
 	- **Safety PLC:** 169.254.60.1 (not controlled in this HMI)
 	
