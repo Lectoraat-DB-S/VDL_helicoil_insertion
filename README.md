@@ -1,26 +1,92 @@
-# template-repository 🦾
-codering
-Tijdens het opleveren van code zien we graag dat er een README bestand wordt meegeleverd, dit maakt het gemakkelijker voor een ander om met jouw code verder te gaan of er gebruik van te maken.
-Deze README beschrijft het project, wat je nodig hebt om de code te gebruiken en hoe je de code kunt gebruiken. Uiteraard kan dit ietsje afwijken aan de hand van welke taal je hebt geprogrammeerd, maar blijf het liefst zo dicht bij mogelijk bij deze standaarden.
+# Helicoil insertion 🦾
 
-De volgende dingen zien we graag in een README:
-- beschrijving: graag zien we een korte beschrijving van je project. dus een korte uitleg wat je code doet als je het gebruikt.
-- imports en versies: graag zien we een lijst met alle imports, packages, software, etc die je hebt gebruikt met de versies. Denk hierbij aan je python versie, dat je iets met "pip install" hebt geinstalleerd of dat je ubuntu 23.04 als operating system hebt gebruikt (dus ook welke versie je hebt geinstalleerd). (test dus ook je code op een andere laptop!!! hierdoor weet je zeker dat je alles genoteerd hebt)
-- architectuur: graag zien we een korte beschrijving van de architectuur van je project. welke bestanden hebben welke bestanden nodig en wat kun je in welk bestand vinden.
-- reference: graag zien we een lijst met welke code je niet zelf hebt gemaakt of gebaseerd hebt op een ander zijn code met daarbij een link naar de originele code en een datum waarop je die code hebt geraadpleegd. Dit zorgt ervoor dat de juiste mensen credit krijgen. (let op, ook als je een functie ergens vandaan haalt en aanpast hoor je nog steeds te zeggen wie daar credit voor krijgt).
-- usage: op het moment dat je extra hardware zoals een robot gebruikt is het fijn als er ook iets uitgelegd wordt over hoe je alles hebt aangesloten en opgestart. Misschien is het wel van belang dat je eerst het programma op de cobot start voordat je de python code op je laptop start.
+This repository contains the code for the VDL_helicoil_insertion HMI, designed to control a UR10e cobot with an OnRobot Screwdriver, a Mako G131-C camera for calibration and a Cobotrack. This HMI offers flexible control of these components from a PC, streamlining complex tasks such as inserting screws into models with numerous holes that would be difficult to perform manually via Polyscope.
 
-- commenting: in code is het vrij normaal om comments te gebruiken om je code duidelijker te maken. Graag zien we dan ook dat dit gedaan wordt.
-	- functie beschrijving: Liefst zien we dat er per functie met een comment uitgelegd wordt hoe de functie werkt en waarvoor ie bedoeld wordt (dit kan vaak in 1 zin). mocht de functie lang zijn dan zien we ook graag comments tussendoor.
-	- Bestand beschrijving: Liefst zien we bovenaan elk bestand dat er een korte beschrijving staat van welke functies er in het bestand geprogrammeerd zijn.
-	- Variabele beschrijving:
+---
 
-Een ReadMe schrijf je in Markdown. in de volgende link vind je wat voorbeelden over hoe je deze kunt stylen:
-https://github.com/lifeparticle/Markdown-Cheatsheet
+## **Code Guidelines**
 
-mocht je wat inspiratie willen kun je op de github hieronder even kijken.
-https://github.com/matiassingers/awesome-readme
+When delivering code, we highly recommend including a `README` file. This makes it easier for others to understand, use, or build upon your work. This `README` describes the project, its dependencies, and how to use the code. While minor deviations are acceptable based on the programming language used, please try to adhere as closely as possible to these standards.
 
-https://integrity.mit.edu/handbook/academic-integrity-handbook
+Here's what we'd like to see in a `README`:
 
+---
 
+## **Description**
+
+The `VDL_helicoil_insertion` is a Human-Machine Interface (HMI) built to control a UR10e cobot with an OnRobot Screwdriver, a Mako G131-C camera for calibration and a Cobotrack. This HMI enables flexible component control directly from a PC, which is particularly beneficial for complex tasks. For instance, models with over 300 holes are challenging to process manually using Polyscope; this solution effectively circumvents that issue.
+
+---
+
+## **Dependencies & Versions**
+
+Below is a list of all necessary imports, packages, and software with their respective versions. Please verify your code on another machine to ensure all dependencies are accurately noted. 
+
+* `Anaconda Python Interpreter`: 3.13.5
+* `ur-rtde`: 1.6.2
+* `websocket-client`: 1.8.0
+* `sockets`: 1.0.0
+* `requests`: 2.32.5
+* `tkinter`
+* `time`
+* `re`
+* `threading`
+* `python-socketio`: 5.13.0
+* `numpy-base`: 2.2.6
+
+---
+
+## **Architecture**
+
+This section describes the architecture of the project, outlining the purpose of each file and its interdependencies.
+
+GUI folder contents:
+
+* **`cobotrack_interface`**: Contains functions for sending requests to control the Cobotrack, called by `gui_app`.
+* **`gui_app`**: Implements the core logic of the HMI, managing function calls and file interactions.
+* **`main`**: Solely responsible for the initialization of the HMI.
+* **`requests_interface`**: Defines functions for sending requests to the OnRobot Screwdriver API, including specific screwdriver operations. 
+* **`rtde_interface`**: Manages cobot movement and status checks, along with connection functions.
+* **`socketio_interface`**: Describes and initializes the SocketIO connection protocol for real-time status updates from the OnRobot Screwdriver.
+* **`Io_test`**: Runs the helicoil feeder loop. Manages I/O inputs that are integrated in the cobot.
+
+Robodk folder contents:
+
+* **`Instellingen folder`**: Contains every setting that should be set up in robodk
+
+* **`csv_importernewest`**: Contains code for importing csv targets in robodk
+* **`rdk file for robodk`**: robodk file where the setup is
+* **`Generatefaceapproaches`**: Contains code for generating face approaches, generating links, creating sub and main programs
+
+---
+
+## **References**
+
+All code in this repository has been self-written based on the API descriptions of the respective libraries. Comments within the code were generated with the assistance of ChatGPT or Gemini Pro.
+
+* No external code or adapted functions were used.
+
+---
+
+## **Usage**
+
+When using external hardware such as a robot, it's crucial to understand the connection and startup procedures. For example, it might be necessary to start the program on the cobot before launching the Python code on your laptop.
+
+1. **Start Polyscope on the Cobot:** This cannot be done from the PC.
+2. **Configure Network Settings:** Ensure the IP address and subnet mask are correctly configured in the cobot's settings according to the following settings:
+
+	- **Subnet Mask:** 255.255.255.0
+	- **Cobot:** 192.168.12.120
+	- **Screwdriver:** 192.168.12.15
+	- **HMI:** 192.168.12.137 (PC IP address used)
+	- **Camera:** 192.168.12.100
+    - **MIR:** 192.168.12.24 (not controlled in this HMI)
+
+	- **Subnet mask:** 255.255.0.0
+	- **Safety PLC:** 169.254.60.1 (not controlled in this HMI)
+	
+3. **Set Polyscope to remote control:** The laptop cannot access the cobot when it is not in remote control.
+4. **Run python software:** Main.py to start the program on the PC
+5. **Check connection:"** Press Check Connections to make sure the RTDE and the Socket_io (screwdriver) are connected. The Cobotrack can stay disconnected when not in use.
+
+---
