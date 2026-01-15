@@ -33,6 +33,9 @@ Below is a list of all necessary imports, packages, and software with their resp
 * `threading`
 * `python-socketio`: 5.13.0
 * `numpy-base`: 2.2.6
+* `vmbpy`: 
+* `opencv-python`:
+* `pyzbar`: 
 
 ---
 
@@ -62,7 +65,7 @@ Robodk folder contents:
 
 ## **References**
 
-All code in this repository has been self-written based on the API descriptions of the respective libraries. Comments within the code were generated with the assistance of ChatGPT or Gemini Pro.
+All code in this repository has been self-written based on the API descriptions of the respective libraries. Comments within the code and some of the functions were generated with the assistance of ChatGPT or Gemini Pro.
 
 * No external code or adapted functions were used.
 
