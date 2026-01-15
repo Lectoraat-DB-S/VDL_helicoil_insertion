@@ -82,6 +82,7 @@ When using external hardware such as a robot, it's crucial to understand the con
 	- **Camera:** 192.168.12.100
     - **MIR:** 192.168.12.24 (not controlled in this HMI)
 
+
 	- **Subnet mask:** 255.255.0.0
 	- **Safety PLC:** 169.254.60.1 (not controlled in this HMI)
 	
