@@ -275,7 +275,7 @@ def move_to_positionj_calibrated_Joints(position, speed=SPEED, acceleration=ACCE
 
 
 # function that only moves a single specified joint
-def move_joint(angle, joint, speed=SPEED, acceleration=ACCELERATION):
+def move_single_joint(angle, joint, speed=SPEED, acceleration=ACCELERATION):
     if initialize_rtde() and rtde_c and rtde_r:
         # get actual joint positions
         start_joints = rtde_r.getActualQ()
@@ -370,7 +370,7 @@ def move_to_positionl_calibrated_TCP(position, speed=SPEED, acceleration=ACCELER
 
 # movel that is calibrated by using the offset
 # untested
-def move_to_positionl_calibrated_joints(position, speed=SPEED, acceleration=ACCELERATION):
+def move_to_positionl_calibrated_joints(q, speed=SPEED, acceleration=ACCELERATION):
     # the incoming position is [x, y, z, rx, ry, rz]
     if initialize_rtde() and rtde_c:
 
@@ -382,34 +382,36 @@ def move_to_positionl_calibrated_joints(position, speed=SPEED, acceleration=ACCE
 
         # initialize a new position list and copy the original positions into a different list
         new_position = [0, 0, 0, 0, 0, 0]
-        joint_position = list(position)
+        joint_position = list(q)
 
         # add base rotation (somewhere i made an mistake so it is here fixed with a -= instead of a +=)
         joint_position[0] -= global_joint_offset[5]
 
         # change position to pose. so r1, r2, r3, r4, r5, r6 to x, y, z, rx, ry, rz
-        rotated_pose = rtde_c.getForwardKinematics(joint_position, tcp_offset)
+        calibrated_pose = rtde_c.getForwardKinematics(joint_position, tcp_offset)
 
         # add xy offset     WATCH OUT: the X of the camera is the Y of the robot
-        rotated_pose[0] += global_calibration_offset[1]
-        rotated_pose[1] += global_calibration_offset[0]
+        calibrated_pose[0] += global_calibration_offset[1]
+        calibrated_pose[1] += global_calibration_offset[0]
+
+        #! opnieuw inverse kinematics
 
         if DEBUG_CODE:
-            print(f"MoveJ gestart. Nominale positie: {position}")
-            print(f"Gekorrigeerde positie: {rotated_pose}")
+            print(f"MoveL[joints] gestart. Nominale positie: {joint_position}")
+            print(f"Gekorrigeerde positie: {calibrated_pose}")
 
-        rtde_c.moveL(rotated_pose, speed, acceleration)
+        rtde_c.moveL(calibrated_pose, speed, acceleration)
     else:
         raise RuntimeError("RTDE control interface is not connected.")
 
-def move_to_positionj_IK(position, speed=3, acceleration=1.8):
+'''def move_to_positionj_IK(position, speed=3, acceleration=1.8):
     if initialize_rtde() and rtde_c:
         print(f"MoveJ pose gestart. Nominale positie: {position}")
         rtde_c.moveJ_IK(position, speed, acceleration)
     else:
         raise RuntimeError("RTDE control interface is not connected.")
 
-
+'''
 # Aangepaste move_to_positionj
 def move_to_positionj(position, speed=3, acceleration=1.8):
     """
@@ -477,15 +479,15 @@ def move_to_positionl(position, speed=3.0, acceleration=1.8):
     else:
         raise RuntimeError("RTDE control interface is not connected.")
 
-def move_to_positionl_FK(position, speed=3.0, acceleration=1.8):
+'''def move_to_positionl_FK(position, speed=3.0, acceleration=1.8):
     if initialize_rtde() and rtde_c:
         print(f"MoveL gestart joint. Nominale positie: {position}")
         rtde_c.moveL_FK(position, 3, 1.8)
     else:
         raise RuntimeError("RTDE control interface is not connected.")
+'''
 
-
-def move_to_positionlV2(position, speed=3.0, acceleration=1.8):
+'''def move_to_positionlV2(position, speed=3.0, acceleration=1.8):
     # de commando's die je verstuurd zijn geloof ik geen radialen maar [X, Y, Z, rx, ry, rz], oftewel de tcp. de X, Y, Z zijn in meters en de rx, ry, rz zijn in radialen
     if initialize_rtde() and rtde_c:
 
@@ -508,7 +510,7 @@ def move_to_positionlV2(position, speed=3.0, acceleration=1.8):
     else:
         raise RuntimeError("RTDE control interface is not connected.")
 
-
+'''
 def get_actual_joint_positions():
     if initialize_rtde() and rtde_r:
         return rtde_r.getActualQ()

@@ -7,3 +7,6 @@ if __name__ == "__main__":
     app = GUIApp(root)
     root.mainloop()
 
+# robot / tool ip centraal opslaan
+#stop/start/pause program?
+

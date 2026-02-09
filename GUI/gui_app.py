@@ -179,7 +179,7 @@ class GUIApp:
         self.tab_control = ttk.Notebook(panel_frame)
         self.tab3 = ttk.Frame(self.tab_control)
         self.tab4 = ttk.Frame(self.tab_control)
-        self.tab_control.add(self.tab3, text="SD - Functions")
+        self.tab_control.add(self.tab3, text="Screwdriver")
         self.tab_control.add(self.tab4, text="General")
 
         self.tab_control.pack(expand=1, fill=tk.BOTH)
@@ -244,11 +244,11 @@ class GUIApp:
                                            width=18)
         btn_stop_start_feederloop.pack(pady=8, padx=5, fill=tk.X)
 
-        btn_indraaien = ttk.Button(button_frame, text="Tightening", command=self.run_indraaien, width=18)
-        btn_indraaien.pack(pady=8, padx=5, fill=tk.X)
+        #btn_indraaien = ttk.Button(button_frame, text="Tightening", command=self.run_indraaien, width=18)
+        #btn_indraaien.pack(pady=8, padx=5, fill=tk.X)
 
-        btn_uitdraaien = ttk.Button(button_frame, text="Unscrewing", command=self.run_uitdraaien, width=18)
-        btn_uitdraaien.pack(pady=8, padx=5, fill=tk.X)
+        #btn_uitdraaien = ttk.Button(button_frame, text="Unscrewing", command=self.run_uitdraaien, width=18)
+        #btn_uitdraaien.pack(pady=8, padx=5, fill=tk.X)
 
         btn_check_connections = ttk.Button(button_frame, text="Check connections",
                                            command=lambda: self.run_in_thread(self.check_connections),
@@ -285,14 +285,14 @@ class GUIApp:
 
         self.tab_control.add(self.tab1, text="Status")
         self.tab_control.add(self.tab2, text="Logs")
-        self.tab_control.add(self.tab3, text="Cobotrack")
+       # self.tab_control.add(self.tab3, text="Cobotrack")
         self.tab_control.pack(expand=1, fill=tk.BOTH)
 
         # Status-tab
         self.setup_status_tab()
 
-        # Cobotrack tab
-        self.setup_cobotrack_tab()
+       # # Cobotrack tab
+       # self.setup_cobotrack_tab()
 
         # Logs-tab
         self.setup_logs_tab()
@@ -374,7 +374,7 @@ class GUIApp:
         scrollbar.config(command=self.log_text.yview)
         self.log_text.config(yscrollcommand=scrollbar.set)
 
-    def setup_cobotrack_tab(self):
+    '''def setup_cobotrack_tab(self):
         """
         Set up the Cobotrack control tab.
         Creates slider and buttons to control Cobotrack movement.
@@ -442,7 +442,7 @@ class GUIApp:
     # ------------------------------------------
     # Script Loading and Execution Functions
     # ------------------------------------------
-
+'''
     def load_script(self):
         """
         Open a file dialog to select a script file.
@@ -600,15 +600,11 @@ class GUIApp:
                     joints_str = bracket_match.group(1)
                     joints = [float(j.strip()) for j in joints_str.split(',')]
 
-                    #print(f"Running: movel - joints {joints}")
-                    #self.log_message(f"Running: movel - joints {joints}")
-
                     if not self.debug:
-                        # move_to_positionl_FK(joints)
                         move_to_positionl_calibrated_joints(joints)
 
                 elif p_match:
-                    # Format: movel(p[-0.969933, 0.499379, ...])
+                 '''   # Format: movel(p[-0.969933, 0.499379, ...])
                     joints_str = p_match.group(1)
                     joints = [float(j.strip()) for j in joints_str.split(',')]
 
@@ -634,6 +630,10 @@ class GUIApp:
                     self.log_message(f"Couldn't find joint values in command: {command}")
 
                     # UR10e movej command
+                    '''
+                 print(f"Do not use with pose: {command}")
+                 self.log_message(f"Do not use with pose: {command}")
+                 
             elif command.startswith('movej'):
                 # Standard format: movej([joints])
                 bracket_match = re.match(r'movej\(\[([-\d., ]+)\]', command)
@@ -654,7 +654,7 @@ class GUIApp:
                         move_to_positionj(joints)
 
                 elif p_match:
-                    # Format: movej(p[-0.969933, 0.499379, ...])
+                   ''' # Format: movej(p[-0.969933, 0.499379, ...])
                     joints_str = p_match.group(1)
                     joints = [float(j.strip()) for j in joints_str.split(',')]
 
@@ -678,7 +678,10 @@ class GUIApp:
                 else:
                     print(f"Couldn't find joint values in command: {command}")
                     self.log_message(f"Couldn't find joint values in command: {command}")
-
+'''
+                print(f"Do not use with pose: {command}")
+                self.log_message(f"Do not use with pose: {command}")
+                
             # Screwdriver move_shank command
             elif command.startswith('move_shank'):
                 # Parse move_shank command
@@ -713,7 +716,7 @@ class GUIApp:
                 else:
                     print(f"Invalid screw_out command: {command}")
 
-            # cobotrack move_to command
+            '''# cobotrack move_to command
             elif command.startswith('move_to'):
                 # Parse move_to command
                 match = re.match(r'move_to\((\d+)\)', command)
@@ -723,10 +726,10 @@ class GUIApp:
                     # cobotrack_interface.move_to(value)
                 else:
                     print(f"Invalid move_to command: {command}")
-
             else:
                 print(f"Unknown command: {command}")
                 self.log_message(f"Unknown command: {command}")
+                '''
 
         except Exception as e:
             print(f"Execution of command failed: {command}\nError message: {e}")
@@ -815,7 +818,7 @@ class GUIApp:
         ]
         self._run_operation("Loosen Screw", prompts, loosen_screw)
 
-    def run_indraaien(self):
+    '''def run_indraaien(self):
         """
         Start the screw tightening process in a separate thread.
         Maintained for compatibility.
@@ -848,11 +851,11 @@ class GUIApp:
             self.log_message("Success: Unscrewing completed!")
         except Exception as e:
             self.log_message(f"Error: Unscrewing failed: {e}")
-
+    '''
     # ------------------------------------------
     # Cobotrack Control Functions
     # ------------------------------------------
-
+    '''
     def move_cobotrack(self):
         """
         Move Cobotrack to the position specified by the slider.
@@ -913,7 +916,7 @@ class GUIApp:
                 self.stop_cobotrack()
 
             time.sleep(0.4)  # Update every second
-
+    '''
     # ------------------------------------------
     # Connection and Utility Functions
     # ------------------------------------------
@@ -929,13 +932,15 @@ class GUIApp:
 
                 socketio_status = "Socket.IO connected" if sio.connected else "Socket.IO not connected"
 
-                cobotrack_interface.connect()
-                cobotrack_status = "Cobotrack connected" if cobotrack_interface.is_connected() else "Cobotrack not connected"
+               # cobotrack_interface.connect()
+               # cobotrack_status = "Cobotrack connected" if cobotrack_interface.is_connected() else "Cobotrack not connected"
 
-                all_connected = rtde_conn and sio.connected and cobotrack_interface.is_connected()
+              #  all_connected = rtde_conn and sio.connected and cobotrack_interface.is_connected()
+                all_connected = rtde_conn and sio.connected
 
                 self.root.after(0, lambda: self.update_connection_ui(
-                    rtde_status, socketio_status, cobotrack_status, all_connected
+                    #rtde_status, socketio_status, cobotrack_status, all_connected
+                    rtde_status, socketio_status, all_connected
                 ))
 
             except Exception as e:
@@ -965,8 +970,8 @@ class GUIApp:
                     if isinstance(btn, ttk.Button) and btn["text"] == "Check connections":
                         btn.config(state=state)
 
-    def update_connection_ui(self, rtde_status, socketio_status, cobotrack_status, all_connected):
-        self.status_label.config(text=f"Status: {rtde_status} | {socketio_status} | {cobotrack_status}")
+    def update_connection_ui(self, rtde_status, socketio_status,  all_connected):
+        self.status_label.config(text=f"Status: {rtde_status} | {socketio_status} ")
         color = "success" if all_connected else "danger"
         self.status_canvas.itemconfig(self.status_indicator, fill=self.colors[color])
         if not all_connected:
@@ -1010,8 +1015,6 @@ class GUIApp:
         if sio.connected:
             sio.disconnect()
 
-        if cobotrack_interface.is_connected():
-            cobotrack_interface.disconnect()
 
         self.status_label.config(text="Status: Disconnected")
         self.status_canvas.itemconfig(self.status_indicator, fill=self.colors["danger"])
@@ -1300,7 +1303,7 @@ class GUIApp:
                 self._execute_calibration_sequence(camera_offset_values, "joint")
 
                 # apply base joint offset by only moving the base joint (the joint is accidently given back in the wrong +-)
-                move_joint(-camera_offset_values[5], 0)
+                move_single_joint(-camera_offset_values[5], 0)
             elif len(my_movement) == 3:
                 print("No QR code found during first calibration")
             else:
