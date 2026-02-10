@@ -81,22 +81,24 @@ def get_stepped_hole_properties(step_file):
                     used_tags.add(cyl2["tag"])
 
             # Consolidate properties for the identified hole system
-            total_lengths = [float(c["length"]) for c in current_hole]
-            radii = [float(c["radius"]) for c in current_hole]
-            main_axis = current_hole[0]["axis"].tolist()
+            #total_lengths = [float(c["length"]) for c in current_hole]
+            #radii = [float(c["radius"]) for c in current_hole]
+            #main_axis = current_hole[0]["axis"].tolist()
             
             # Calculate a global center point for the system
             c1_set = np.array([c["c1"] for c in current_hole])
             c2_set = np.array([c["c2"] for c in current_hole])
             center_avg = ((np.mean(c1_set, axis=0) + np.mean(c2_set, axis=0)) / 2).tolist()
+ 
 
+            # Updated dictionary keys to match GUI expectations exactly
             holes.append({
-                "segments": len(current_hole),
                 "surface_tags": [int(c["tag"]) for c in current_hole],
-                "center": center_avg,
-                "axis": main_axis,
-                "radii": radii,
-                "total_length": total_lengths
+                "segments": len(current_hole),
+                "radii": tuple(round(float(c["radius"]), 3) for c in current_hole), 
+                "lengths": tuple(round(float(c["length"]), 3) for c in current_hole), 
+                "pos": center_avg,                      # Changed from 'center' to 'pos'
+                "dir": [float(x) for x in current_hole[0]["axis"]], # Changed from 'axis' to 'dir'
             })
 
         return holes
@@ -105,17 +107,17 @@ def get_stepped_hole_properties(step_file):
         gmsh.finalize()
 
 # --- Execution and Formatting ---
-path = "Pre-processor/Testobject/achterplaat.step"
-hole_systems = get_stepped_hole_properties(path)
+#path = "Pre-processor/Testobject/achterplaat.step"
+#hole_systems = get_stepped_hole_properties(path)
 
-for h in hole_systems:
+#for h in hole_systems:
     # Rounding values for cleaner terminal output
-    clean_center = [round(x, 3) for x in h['center']]
-    clean_axis = [round(x, 3) for x in h['axis']]
-    clean_radii = [round(r, 3) for r in h['radii']]
+#    clean_center = [round(x, 3) for x in h['center']]
+#    clean_axis = [round(x, 3) for x in h['axis']]
+#    clean_radii = [round(r, 3) for r in h['radii']]
     
-    print(f"Hole tags: {h['surface_tags']}")
-    print(f"  Center: {clean_center}")
-    print(f"  Direction (Axis): {clean_axis}")
-    print(f"  Radii: {clean_radii}")
-    print(f"  Lengths: {h['total_length']}")
+#    print(f"Hole tags: {h['surface_tags']}")
+#    print(f"  Center: {clean_center}")
+#    print(f"  Direction (Axis): {clean_axis}")
+#    print(f"  Radii: {clean_radii}")
+#   print(f"  Lengths: {h['total_length']}")

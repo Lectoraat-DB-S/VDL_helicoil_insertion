@@ -57,11 +57,15 @@ class HoleAnalyzerGUI(QMainWindow):
 
     def analyze_and_mesh(self, file_path):
         gmsh.initialize()
-        gmsh.option.setNumber("General.Terminal", 0) 
+
+
         all_holes = []
         try:
             gmsh.model.occ.importShapes(file_path)
             gmsh.model.occ.synchronize()
+            gmsh.option.setNumber("General.Terminal", 0) 
+            gmsh.option.setNumber("Mesh.MeshSizeFactor", 10.0) #make a coarser mesh for performance
+            gmsh.option.setNumber("Mesh.MeshSizeMin", 100.0)
             gmsh.model.mesh.generate(2)
             
             node_tags, coords, _ = gmsh.model.mesh.getNodes()
@@ -121,7 +125,7 @@ class HoleAnalyzerGUI(QMainWindow):
         self.btn_export.setEnabled(len(holes) > 0)
 
         if self.nodes is not None:
-            self.ax.plot_trisurf(self.nodes[:,0], self.nodes[:,1], self.nodes[:,2], triangles=self.tris, alpha=0.03, color='gray')
+            self.ax.plot_trisurf(self.nodes[:,0], self.nodes[:,1], self.nodes[:,2], triangles=self.tris, alpha=0.2, color='gray',edgecolor='black',linewidth=0.3)
             ranges = [self.nodes[:,i].max() - self.nodes[:,i].min() for i in range(3)]; pr = 0.5 * max(ranges)
             mids = [np.mean([self.nodes[:,i].max(), self.nodes[:,i].min()]) for i in range(3)]
             self.ax.set_xlim3d([mids[0]-pr, mids[0]+pr]); self.ax.set_ylim3d([mids[1]-pr, mids[1]+pr]); self.ax.set_zlim3d([mids[2]-pr, mids[2]+pr])
