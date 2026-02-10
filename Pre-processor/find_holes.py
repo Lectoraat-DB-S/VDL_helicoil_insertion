@@ -1,0 +1,121 @@
+import gmsh
+import numpy as np
+
+def get_stepped_hole_properties(step_file):
+    """
+    Parses a STEP file to identify cylindrical surfaces and group them into 
+    stepped hole systems based on spatial proximity.
+    """
+    gmsh.initialize()
+    try:
+        gmsh.model.occ.importShapes(step_file)
+        gmsh.model.occ.synchronize()
+
+        raw_cylinders = []
+        surfaces = gmsh.model.getEntities(2)
+
+        # Iterate through all surfaces to identify cylindrical geometry
+        for dim, tag in surfaces:
+            if "Cylind" in gmsh.model.getType(dim, tag):
+                # Retrieve parametric bounds: 
+                # u (angular rotation [0 to 2pi]), v (length along axis)
+                bounds = gmsh.model.getParametrizationBounds(dim, tag)
+                u_min, u_max = bounds[0][0], bounds[1][0]
+                v_min, v_max = bounds[0][1], bounds[1][1]
+
+                def get_circle_data(v_val):
+                    """Calculates the center and radius at a specific longitudinal position (v)."""
+                    # Sample points along the half-circumference
+                    pts = [gmsh.model.getValue(dim, tag, [u_min + (u_max - u_min) * (i / 2.0), v_val]) 
+                           for i in range(2)]
+                    pts = np.array(pts)
+                    center = np.mean(pts, axis=0)
+                    radius = np.mean(np.linalg.norm(pts - center, axis=1))
+                    return center, radius
+
+                # Extract geometric properties at both ends of the cylinder segment
+                c_start, r_start = get_circle_data(v_min)
+                c_end, r_end = get_circle_data(v_max)
+                
+                # Calculate vector and length
+                vec = c_end - c_start
+                length = np.linalg.norm(vec)
+
+                # Define the unit axis vector (handling degenerate cases)
+                axis = vec / length if length > 1e-9 else np.array([0.0, 0.0, 0.0]) 
+                
+                raw_cylinders.append({
+                    "tag": tag,
+                    "c1": c_start,
+                    "c2": c_end,
+                    "radius": r_start,
+                    "length": length,
+                    "axis": axis
+                })
+
+        # Group individual cylindrical surfaces into 'holes' based on proximity
+        holes = []
+        used_tags = set()
+
+        for i, cyl1 in enumerate(raw_cylinders):
+            if cyl1["tag"] in used_tags: 
+                continue
+            
+            current_hole = [cyl1]
+            used_tags.add(cyl1["tag"])
+
+            for j, cyl2 in enumerate(raw_cylinders):
+                if i == j or cyl2["tag"] in used_tags: 
+                    continue
+                
+                # Check distance between any two endpoints (start/end may be flipped)
+                dists = [
+                    np.linalg.norm(cyl1["c1"] - cyl2["c1"]), 
+                    np.linalg.norm(cyl1["c1"] - cyl2["c2"]),
+                    np.linalg.norm(cyl1["c2"] - cyl2["c1"]), 
+                    np.linalg.norm(cyl1["c2"] - cyl2["c2"])
+                ]
+                
+                if min(dists) < 1e-6:
+                    current_hole.append(cyl2)
+                    used_tags.add(cyl2["tag"])
+
+            # Consolidate properties for the identified hole system
+            total_lengths = [float(c["length"]) for c in current_hole]
+            radii = [float(c["radius"]) for c in current_hole]
+            main_axis = current_hole[0]["axis"].tolist()
+            
+            # Calculate a global center point for the system
+            c1_set = np.array([c["c1"] for c in current_hole])
+            c2_set = np.array([c["c2"] for c in current_hole])
+            center_avg = ((np.mean(c1_set, axis=0) + np.mean(c2_set, axis=0)) / 2).tolist()
+
+            holes.append({
+                "segments": len(current_hole),
+                "surface_tags": [int(c["tag"]) for c in current_hole],
+                "center": center_avg,
+                "axis": main_axis,
+                "radii": radii,
+                "total_length": total_lengths
+            })
+
+        return holes
+
+    finally:
+        gmsh.finalize()
+
+# --- Execution and Formatting ---
+path = "Pre-processor/Testobject/achterplaat.step"
+hole_systems = get_stepped_hole_properties(path)
+
+for h in hole_systems:
+    # Rounding values for cleaner terminal output
+    clean_center = [round(x, 3) for x in h['center']]
+    clean_axis = [round(x, 3) for x in h['axis']]
+    clean_radii = [round(r, 3) for r in h['radii']]
+    
+    print(f"Hole tags: {h['surface_tags']}")
+    print(f"  Center: {clean_center}")
+    print(f"  Direction (Axis): {clean_axis}")
+    print(f"  Radii: {clean_radii}")
+    print(f"  Lengths: {h['total_length']}")
