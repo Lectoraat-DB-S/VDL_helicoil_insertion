@@ -1,6 +1,7 @@
 import sys
 import gmsh
 import csv
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -79,9 +80,9 @@ class HoleAnalyzerGUI(QMainWindow):
                 if "Cylind" in gmsh.model.getType(dim, tag):
                     b = gmsh.model.getParametrizationBounds(dim, tag)
                     v_m, v_x = b[0][1], b[1][1]
-                    u_m, u_x = b[0][0], b[1][0]
+                    #u_m, u_x = b[0][0], b[1][0]
                     def get_c(v_val):
-                        p = [gmsh.model.getValue(dim, tag, [u_m + (u_x-u_m)*(k/2.0), v_val]) for k in range(2)]
+                        p = [gmsh.model.getValue(dim, tag, [(math.pi)*(k), v_val]) for k in range(2)]
                         c = np.mean(p, axis=0)
                         return c, np.linalg.norm(p[0]-c)
                     

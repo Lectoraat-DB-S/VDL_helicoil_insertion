@@ -3,22 +3,25 @@ import os
 import tkinter as tk
 from tkinter import filedialog
 from robodk import robolink, robomath
-RDK = robolink.Robolink()
+#RDK = robolink.Robolink()
+RDK = robolink.Robolink(args='/NOLAUNCH')
 '''
 Enable CUDA for Collision Checking: If you have an NVIDIA GPU, you can leverage CUDA cores to speed up collision detection. Go to Tools > Options > Display and switch Collision checking hardware to CUDA.
+Change resolution for collision checking: Tools > Options > Motion
+Simplify mesh for collision checking: e.g. simplify mesh addin. For simple geometry, simplify up to 1% (99% reduction)
 '''
 
-# SET THIS TO TRUE IF YOUR CSV DATA IS RELATIVE TO THE STATION ORIGIN (0,0,0)
-USE_GLOBAL_COORDINATES = False 
-USE_FIXED_FILEPATHS = False 
-USE_RENDER = True
-CREATE_PATH = True
+
+USE_GLOBAL_COORDINATES = False # SET THIS TO TRUE IF YOUR PART FRAME IS RELATIVE TO THE STATION ORIGIN (0,0,0), DEFAULT = FALSE
+USE_FIXED_FILEPATHS = False  #Fixed filepaths, if false, pop-up appears to select file
+USE_RENDER = True #rendering of intermediate steps 
+CREATE_PATH = True #true to generate paths, false to only generate waypoints
 
 #For creating paths, create a map first. Add selected targets to help the motion planner
 start_location = 'Bovenpickup'
 Part_Frame = 'CSV Frame'
 dRot = 10 #rotational resolution for Rz attempts
-target_offset = 50 #offset with respect to hole position
+target_offset = 50 #offset with respect to hole position in mm
 
 #Set robot joint limits (important for performance in mapping)
 lower_limits = [-180, -100, -30, -180, -180, -180]
@@ -29,6 +32,7 @@ def get_roboDKproject_path():
     root = tk.Tk()
     root.withdraw()
     root.attributes("-topmost", True)
+
     if USE_FIXED_FILEPATHS:
         path = r'C:/Users/qr0125816/Documents/GitHub/VDL_helicoil_insertion/RoboDK/Program_VDL_Testobject_AMR_mapped.rdk'
     else:
@@ -223,7 +227,6 @@ def create_robot_path(robot,target,prog):
         success = False
     return success
 
-
 def check_map():
     prm_stats = RDK.Command("CheckRoadmap")
     if "0 nodes" in prm_stats or not prm_stats:
@@ -240,12 +243,12 @@ def check_map():
 
 
 if __name__ == "__main__":
-    RDKproject_path = get_roboDKproject_path()
-    station = RDK.AddFile(RDKproject_path)
+    if not RDK.Connect():
+        RDKproject_path = get_roboDKproject_path()
+        station = RDK.AddFile(RDKproject_path)
+    
     if CREATE_PATH: check_map()
 
-    if station.Valid():
-        print("Project loaded successfully!")
-        create_grouped_targets()
-    else:
-        print("Failed to load the project.")
+    create_grouped_targets()
+
+
