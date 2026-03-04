@@ -8,7 +8,7 @@ from socketio_interface import get_screwdriver_data
 from rtde_interface import *
 
 # Basic data
-compute_box_ip = "192.168.0.15"
+compute_box_ip = "192.168.12.15"
 username = "admin"
 password = "OnRobotPerron038"
 tool_id = 0  # ID of the tool

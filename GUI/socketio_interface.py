@@ -3,7 +3,7 @@ import base64
 from dataclasses import dataclass
 
 # WebSocket connection details
-compute_box_ip = "192.168.0.15"
+compute_box_ip = "192.168.12.15"
 username = "admin"
 password = "OnRobotPerron038"
 

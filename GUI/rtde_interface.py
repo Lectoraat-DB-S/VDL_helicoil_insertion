@@ -13,8 +13,8 @@ def initialize_rtde():
     global rtde_r, rtde_c, rtde_i, rtde_connected
     if not rtde_connected:
         try:
-            rtde_r = rtde_receive.RTDEReceiveInterface("192.168.0.20")
-            rtde_c = RTDEControl("192.168.0.20")
+            rtde_r = rtde_receive.RTDEReceiveInterface("192.168.12.120")
+            rtde_c = RTDEControl("192.168.12.120")
 
 
             rtde_connected = True
