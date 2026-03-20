@@ -4,7 +4,7 @@ import numpy as np
 from vmbpy import *
 from pyzbar.pyzbar import decode, ZBarSymbol
 
-DEBUG_CODE = False                               # true if you want prints, false if you don't
+DEBUG_CODE = True                               # true if you want prints, false if you don't
 QR_REAL_SIZE = 40                               # in milimeters
 QR_PIXEL_SIZE = 124                             # in pixels
 REAL_PIXEL_SIZE = QR_REAL_SIZE/QR_PIXEL_SIZE    # 1 pixel in mm
@@ -241,3 +241,84 @@ def get_camera_pose(frame):
     if DEBUG_CODE:
         print("get camera movement: ", movement)
     return movement
+
+
+######################################################################
+#####                      hole calibration                      #####
+######################################################################
+
+# function to get a picture
+def get_picture_hole():
+    with VmbSystem.get_instance() as vmb:
+        cams = vmb.get_all_cameras()
+
+        # check if there is a camera
+        if not cams:
+            if DEBUG_CODE:
+                print("No Cameras found.")
+            return False, [0, 0, 0]
+
+        with cams[0] as cam:
+            if DEBUG_CODE:
+                print(f"Accessed Camera: {cam.get_id()}")
+
+            state_camera = setup_camera(cam)
+            
+            if not state_camera:
+                if DEBUG_CODE:
+                    print(f"State of the Camera: {state_camera}")
+                return False, [0, 0, 0]
+
+            try:
+                frame = cam.get_frame()
+
+                # 1. Access Raw Numpy Array
+                img_buffer = frame.as_numpy_ndarray()
+
+                # 2. Convert BayerRG -> BGR (As confirmed working)
+                # img_color = cv2.cvtColor(img_buffer, cv2.COLOR_BayerRG2BGR)
+                gray = cv2.cvtColor(img_buffer, cv2.COLOR_BGR2GRAY)
+
+                # Reduce noise
+                gray = cv2.medianBlur(gray, 5)
+
+                # 3. Calculate Pose
+                hole_cords = hole_location(gray, True, frame)
+                if DEBUG_CODE:
+                    print("gotten hole location: ", hole_cords)
+
+                return True, hole_cords
+
+            except Exception as e:
+                print(f"Error: {e}")
+                return False, e
+            
+def hole_location(gray_frame, isItTrue, color_frame):
+    # Detect circles
+    circles = cv2.HoughCircles(
+        gray_frame,
+        cv2.HOUGH_GRADIENT,
+        dp=1,
+        minDist=100,      
+        param1=100,         
+        param2=40,       
+        minRadius=30,       
+        maxRadius=60
+    )
+
+    if DEBUG_CODE:
+        # Draw only the first detected circle
+        for i in circles[0]:
+            i = np.uint16(np.around(i))
+            x, y, r = i
+            cv2.circle(color_frame, (x, y), r, (0, 255, 0), 2)  # Circle outline
+            cv2.circle(color_frame, (x, y), 2, (0, 0, 255), 3)  # Center point
+        print("The following circles are present: ")
+        print(circles)
+
+        # Show result
+        cv2.imshow('Detected Circle', color_frame)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+    
+    return circles[0]
