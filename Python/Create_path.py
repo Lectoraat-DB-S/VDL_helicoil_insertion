@@ -87,7 +87,9 @@ def create_grouped_targets():
         robot.setParam("JointLimitsHigh", upper_str)
 
 
-    tool = None
+    tool = RDK.Item('Screwdriver')
+    robot.setPoseTool(tool)
+    
     for item in selection:
         if item.Type() == robolink.ITEM_TYPE_TOOL:
             tool = item

@@ -26,8 +26,8 @@ def calibrate_robot():
             print("There is no camera present")
         return False, [0,0,0]
     else:
-        my_movement[0] = my_movement[0]/1000
-        my_movement[1] = my_movement[1]/1000
+        #my_movement[0] = my_movement[0]/1000
+        #my_movement[1] = my_movement[1]/1000
         return True, my_movement
 
 # function to get a picture
