@@ -6,7 +6,8 @@ from pyzbar.pyzbar import decode, ZBarSymbol
 
 DEBUG_CODE = True                               # true if you want prints, false if you don't
 QR_REAL_SIZE = 40                               # in milimeters
-QR_PIXEL_SIZE = 124                             # in pixels
+# QR_PIXEL_SIZE = 124                             # in pixels
+QR_PIXEL_SIZE = 140                             # in pixels
 REAL_PIXEL_SIZE = QR_REAL_SIZE/QR_PIXEL_SIZE    # 1 pixel in mm
 OFFSET_X = 10                                   # in pixels
 OFFSET_Y = 10                                   # in pixels
@@ -31,6 +32,7 @@ def calibrate_robot():
 
 # function to get a picture
 def get_picture():
+    pictureTaken = False
     with VmbSystem.get_instance() as vmb:
         cams = vmb.get_all_cameras()
 
@@ -53,7 +55,7 @@ def get_picture():
 
             try:
                 frame = cam.get_frame()
-
+                
                 # 1. Access Raw Numpy Array
                 img_buffer = frame.as_numpy_ndarray()
 
@@ -61,15 +63,15 @@ def get_picture():
                 img_color = cv2.cvtColor(img_buffer, cv2.COLOR_BayerRG2BGR)
 
                 # 3. Calculate Pose
-                _movement = get_camera_pose(img_color, True)
+                pictureTaken, _movement = get_camera_pose(img_color)
                 if DEBUG_CODE:
                     print("get picture movement: ", _movement)
 
-                return True, _movement
+                return pictureTaken, _movement
 
             except Exception as e:
                 print(f"Error: {e}")
-                return False, e
+                return pictureTaken, e
 
 # initialize the camera with the correct settings
 def setup_camera(_cam):
@@ -83,6 +85,7 @@ def setup_camera(_cam):
 
 # get the location of the camera compared to the QR code
 def get_camera_pose(frame):
+    pictureTaken = False
     # initialize variable that will return data
     movement = [0, 0, 0]    #[x, y, rz]
 
@@ -98,6 +101,12 @@ def get_camera_pose(frame):
     # look for QRcodes in the frame
     decoded_objects = decode(equ, symbols=[ZBarSymbol.QRCODE])
 
+    if DEBUG_CODE:
+        if len(decoded_objects) != 0:
+            print(decoded_objects[0][2])
+        else:
+            print("No QR is found")
+        
     # check if all found objects are the correct qr codes
     for obj in decoded_objects:
         # Extract the corner points
@@ -240,7 +249,11 @@ def get_camera_pose(frame):
                     movement[2] = math.radians(dif_angle)
     if DEBUG_CODE:
         print("get camera movement: ", movement)
-    return movement
+
+    if movement[0] != 0 or movement[1] != 0 or movement[2] != 0:
+        pictureTaken = True
+
+    return pictureTaken, movement
 
 
 ######################################################################
