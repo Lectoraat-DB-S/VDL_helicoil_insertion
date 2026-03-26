@@ -7,8 +7,12 @@ from pyzbar.pyzbar import decode, ZBarSymbol
 DEBUG_CODE = True                               # true if you want prints, false if you don't
 QR_REAL_SIZE = 40                               # in milimeters
 # QR_PIXEL_SIZE = 124                             # in pixels
-QR_PIXEL_SIZE = 140                             # in pixels
-REAL_PIXEL_SIZE = QR_REAL_SIZE/QR_PIXEL_SIZE    # 1 pixel in mm
+# if SELF_CALIBRATING:
+#     qr_pixel_size = 1
+#     REAL_PIXEL_SIZE = QR_REAL_SIZE/qr_pixel_size    # 1 pixel in mm 
+# else:
+#     QR_PIXEL_SIZE = 145                         # in pixels
+#     REAL_PIXEL_SIZE = QR_REAL_SIZE/QR_PIXEL_SIZE    # 1 pixel in mm 
 OFFSET_X = 10                                   # in pixels
 OFFSET_Y = 10                                   # in pixels
 OFFSET_ANGLE = 1                                # in degrees
@@ -78,7 +82,7 @@ def setup_camera(_cam):
     try:
         _cam.ExposureAuto.set('Off')        # turn off auto exposure
         _cam.ExposureTimeAbs.set(80000)     # set exposure time to 80000 micros seconds
-        _cam.Gain.set(3)                    # set gain to 3
+        _cam.Gain.set(4)                    # set gain to 3
         return True
     except:
         return False
@@ -103,10 +107,14 @@ def get_camera_pose(frame):
 
     if DEBUG_CODE:
         if len(decoded_objects) != 0:
-            print(decoded_objects[0][2])
+            print(decoded_objects[0][2].width)
+
         else:
             print("No QR is found")
         
+    qr_pixel_size = decoded_objects[0][2].width
+    real_pixel_size = QR_REAL_SIZE/qr_pixel_size
+
     # check if all found objects are the correct qr codes
     for obj in decoded_objects:
         # Extract the corner points
@@ -206,33 +214,33 @@ def get_camera_pose(frame):
             if x_mid_point < (MIDDLE_POINT_CAMERA[0] + OFFSET_X) and x_mid_point > (
                     MIDDLE_POINT_CAMERA[0] - OFFSET_X):
                 if DEBUG_CODE:
-                    print(f"The QR is within {OFFSET_X * REAL_PIXEL_SIZE} mm of the centre of the camera in the X direction, fault is {difX} pixels")
+                    print(f"The QR is within {OFFSET_X * real_pixel_size} mm of the centre of the camera in the X direction, fault is {difX} pixels")
                 # this value means the camera is within the expected offset
                 movement[0] = 0.000000001
             elif difX < 0:
                 if DEBUG_CODE:
-                    print(f"Please move the camera {difX * REAL_PIXEL_SIZE} mm to the left")
-                movement[0] = abs(difX * REAL_PIXEL_SIZE)
+                    print(f"Please move the camera {difX * real_pixel_size} mm to the left")
+                movement[0] = abs(difX * real_pixel_size)
             else:
                 if DEBUG_CODE:
-                    print(f"Please move the camera {difX * REAL_PIXEL_SIZE} mm to the right")
-                movement[0] = -1 * abs(difX * REAL_PIXEL_SIZE)
+                    print(f"Please move the camera {difX * real_pixel_size} mm to the right")
+                movement[0] = -1 * abs(difX * real_pixel_size)
             
             # check if the robot should move in the Y direction
             if y_mid_point < (MIDDLE_POINT_CAMERA[1] + OFFSET_Y) and y_mid_point > (
                     MIDDLE_POINT_CAMERA[1] - OFFSET_Y):
                 if DEBUG_CODE:
-                    print(f"The QR is within {OFFSET_Y * REAL_PIXEL_SIZE} mm of the centre of the camera in the Y direction, fault is {difY} pixels")
+                    print(f"The QR is within {OFFSET_Y * real_pixel_size} mm of the centre of the camera in the Y direction, fault is {difY} pixels")
                 # this value means the camera is within the expected offset
                 movement[1] = 0.000000001
             elif difY < 0:
                 if DEBUG_CODE:
-                    print(f"Please move the camera {difY * REAL_PIXEL_SIZE} mm up")
-                movement[1] = abs(difY * REAL_PIXEL_SIZE)
+                    print(f"Please move the camera {difY * real_pixel_size} mm up")
+                movement[1] = abs(difY * real_pixel_size)
             else:
                 if DEBUG_CODE:
-                    print(f"Please move the camera {difY * REAL_PIXEL_SIZE} mm down")
-                movement[1] = -1 * abs(difY * REAL_PIXEL_SIZE)
+                    print(f"Please move the camera {difY * real_pixel_size} mm down")
+                movement[1] = -1 * abs(difY * real_pixel_size)
 
             # check if the robot should move around it's base
             if dif_angle < (0 + OFFSET_ANGLE) and dif_angle > (0 - OFFSET_ANGLE):
