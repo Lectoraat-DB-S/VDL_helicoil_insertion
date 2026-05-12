@@ -283,7 +283,7 @@ def get_picture_hole():
             if DEBUG_CODE:
                 print(f"Accessed Camera: {cam.get_id()}")
 
-            state_camera = setup_camera(cam)
+            state_camera = setup_camera_holes(cam)
             
             if not state_camera:
                 if DEBUG_CODE:
@@ -297,14 +297,14 @@ def get_picture_hole():
                 img_buffer = frame.as_numpy_ndarray()
 
                 # 2. Convert BayerRG -> BGR (As confirmed working)
-                # img_color = cv2.cvtColor(img_buffer, cv2.COLOR_BayerRG2BGR)
-                gray = cv2.cvtColor(img_buffer, cv2.COLOR_BGR2GRAY)
+                gray = cv2.cvtColor(img_buffer, cv2.COLOR_BayerRG2GRAY)
+                # gray = cv2.cvtColor(img_buffer, cv2.COLOR_BGR2GRAY)
 
                 # Reduce noise
                 gray = cv2.medianBlur(gray, 5)
 
                 # 3. Calculate Pose
-                hole_cords = hole_location(gray, True, frame)
+                hole_cords = hole_location(gray, True, img_buffer)
                 if DEBUG_CODE:
                     print("gotten hole location: ", hole_cords)
 
@@ -313,7 +313,16 @@ def get_picture_hole():
             except Exception as e:
                 print(f"Error: {e}")
                 return False, e
-            
+
+def setup_camera_holes(_cam):
+    try:
+        _cam.ExposureAuto.set('Off')        # turn off auto exposure
+        _cam.ExposureTimeAbs.set(20000)     # set exposure time to 80000 micros seconds
+        _cam.Gain.set(2)                    # set gain to 3
+        return True
+    except:
+        return False
+
 def hole_location(gray_frame, isItTrue, color_frame):
     # Detect circles
     circles = cv2.HoughCircles(
@@ -323,8 +332,8 @@ def hole_location(gray_frame, isItTrue, color_frame):
         minDist=100,      
         param1=100,         
         param2=40,       
-        minRadius=30,       
-        maxRadius=60
+        minRadius=10,       
+        maxRadius=600
     )
 
     if DEBUG_CODE:
