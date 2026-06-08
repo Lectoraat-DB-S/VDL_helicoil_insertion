@@ -1,21 +1,18 @@
-from robodk import robomath
 from robodk.robolink import *
+from robodk import robomath
 import math
-import time
-from camera import get_picture
 
+A = [-674, -368, -35.9]
+B = [-672, -973, -29.6]
+C = [162, -523, -36.6]
 
-A = [-692, -304, -34.95]
-B = [217, -608, -33.3]
-C = [-630, -1054, -24.6]
-
-#Calculate vector AB
+#Calculate 2 vectors in the plane
 AB = robomath.subs3(B, A)
 AC = robomath.subs3(C, A)
 
-#Calculate normal vector of the plane relative to the real base
+#Calculate normal vector of the plane relative to the real robotbase
 n = robomath.normalize3(robomath.cross(AB, AC))
-if n[2] < 0: #Make the vector positive
+if n[2] < 0: #Make the vector point upwards
     for i in range(len(n)):
         n[i]= -n[i]
 

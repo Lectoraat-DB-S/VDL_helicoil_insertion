@@ -8,11 +8,11 @@ from camera import get_picture
 RDK = Robolink()
 robot = RDK.Item('', ITEM_TYPE_ROBOT)
 
-#SETTINGS
-twopoint_calibration = True
-move_robot = True
-Update_baseframe = True
-move_to_calibration_check = True
+# SETTINGS
+twopoint_calibration = False
+move_robot = False
+Update_baseframe = False
+move_to_calibration_check = False
 DEBUG_CODE = True
 if move_robot:
     RDK.setRunMode(RUNMODE_RUN_ROBOT)
@@ -40,21 +40,22 @@ C = baseframe_pos[0:2]
 
 # MEASURE OFFSETS
 tool = RDK.Item('Camera', ITEM_TYPE_TOOL)
-robot.setPoseTool(tool) #Makes sure the right TCP is used for the move commands
-robot.setSpeed(200, 50, 30, 10)
+robot.setPoseTool(tool) # Makes sure the right TCP is used for the move commands
+robot.setSpeed(200, 50, 30, 5)
 
 def get_offset(QR):
-    robot.MoveJ(QR) #Waits untill movement is finished (Blocking=True by default)
+    robot.MoveJ(QR) # Waits untill movement is finished (Blocking=True by default)
     time.sleep(1)
     camera_present, offset = get_picture()
-    offset[1] = -offset[1] #convert to the right coordinate system (global coordinates if rotation=0)
-    #convert offset to the global coordinate system, regardless of the camera pose
-    #This works only for right angles yet
-    xyzwpr = robomath.Pose_2_Fanuc(QR.Pose())
-    rotation = math.radians(xyzwpr[5])
-    #print(f'rotation = {math.degrees(rotation)}')
+    # Convert offset to global coordinates, regardless the orientaten of the target
+    # This works only for multiples of 90 degrees yet
+    offset[1] = -offset[1] # Mirror the coordinate system to get the X and Y axis right (global coordinates if rotation=0)
+    xyzwpr = robomath.Pose_2_Fanuc(QR.PoseAbs())
+    rotation = math.radians(xyzwpr[5]-90) # The rotation of the target with respect to the global reference frame
+    print(f'rotation target= {math.degrees(rotation)}')
     offset_x = [offset[0]*robomath.cos(rotation) - offset[1]*robomath.sin(rotation), offset[1]*robomath.cos(rotation) + offset[0]*robomath.sin(rotation)]
     if DEBUG_CODE:
+        print(f'rotation target with respect to global coordinates= {math.degrees(rotation)}')
         print(f'offset {QR.Name()} = {offset_x}')   
     return offset_x, offset[2]-rotation
     
@@ -68,8 +69,8 @@ if twopoint_calibration:
 if DEBUG_CODE:
     print(f'RZ = {RZ}')
 
-#CALCULATE OFFSET OF BASEFRAME (offset_C)
-AC = [C[0]-A[0], C[1]-A[1]] #vector AC
+# CALCULATE OFFSET OF BASEFRAME (offset_C)
+AC = [C[0]-A[0], C[1]-A[1]] # vector AC
 AC_polar = [math.dist(C, A), math.atan2(AC[1], AC[0])]
 ApCp_polar = [AC_polar[0], AC_polar[1] + RZ]
 ApCp = [ApCp_polar[0]*math.cos(ApCp_polar[1]), ApCp_polar[0]*math.sin(ApCp_polar[1])]
@@ -84,13 +85,14 @@ new_baseframe = robomath.transl(offset_C[0], offset_C[1], 0) * new_baseframe_rot
 if Update_baseframe:
     baseframe.setPose(new_baseframe)
 
-#targets updaten naar Cartesian Targets
+# Set targets as Cartesian Targets
 program = RDK.Item('main', ITEM_TYPE_PROGRAM)
 frame = RDK.Item('Type 13', ITEM_TYPE_FRAME)
 all_targets = RDK.ItemList(ITEM_TYPE_TARGET)
+# Verify if the target is a child of the specified frame
 for target in all_targets:
-    # Verify if the target is a child of the specified frame
     if target.Parent().Name() == frame.Name():
+    #if target.Parent().Parent().Name() == frame.Name():
         target.setAsCartesianTarget()
 program.setParam("RecalculateTargets")
 

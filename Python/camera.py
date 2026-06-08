@@ -4,7 +4,7 @@ import numpy as np
 from vmbpy import *
 from pyzbar.pyzbar import decode, ZBarSymbol
 
-DEBUG_CODE = True                               # true if you want prints, false if you don't
+DEBUG_CODE = True                              # true if you want prints, false if you don't
 QR_REAL_SIZE = 40                               # in milimeters
 # QR_PIXEL_SIZE = 124                             # in pixels
 # if SELF_CALIBRATING:
@@ -13,9 +13,9 @@ QR_REAL_SIZE = 40                               # in milimeters
 # else:
 #     QR_PIXEL_SIZE = 145                         # in pixels
 #     REAL_PIXEL_SIZE = QR_REAL_SIZE/QR_PIXEL_SIZE    # 1 pixel in mm 
-OFFSET_X = 10                                   # in pixels
-OFFSET_Y = 10                                   # in pixels
-OFFSET_ANGLE = 1                                # in degrees
+OFFSET_X = 0                                  # in pixels
+OFFSET_Y = 0                                  # in pixels
+OFFSET_ANGLE = 0                                # in degrees
 MIDDLE_POINT_CAMERA = [640, 512]                # in pixels
 
 # function to calibrate the move commandos according to an QRcode
@@ -269,7 +269,7 @@ def get_camera_pose(frame):
 ######################################################################
 
 # function to get a picture
-def get_picture_hole():
+def get_picture_hole(distance):
     with VmbSystem.get_instance() as vmb:
         cams = vmb.get_all_cameras()
 
@@ -306,9 +306,21 @@ def get_picture_hole():
                 # 3. Calculate Pose
                 hole_cords = hole_location(gray, True, img_buffer)
                 if DEBUG_CODE:
-                    print("gotten hole location: ", hole_cords)
+                    print("gotten hole location:")
+                    print(hole_cords)
 
-                return True, hole_cords
+                # 4. Find nearest hole to center of picture
+                distances = []
+                for i in range(len(hole_cords)):
+                    circle = hole_cords[i]
+                    dist = math.dist(circle[0:2], MIDDLE_POINT_CAMERA)
+                    distances.append(dist)
+                nearest_hole = hole_cords[distances.index(min(distances))]
+                #offset = [nearest_hole[0]-MIDDLE_POINT_CAMERA[0], MIDDLE_POINT_CAMERA[1]-nearest_hole[1]]
+                offset = np.subtract(nearest_hole[0:2], MIDDLE_POINT_CAMERA)
+                offset = offset*(40*distance/90750) #empirical relation between pixelsize in mm and distance from camera lense
+                return offset.tolist()
+                # return True, hole_cords
 
             except Exception as e:
                 print(f"Error: {e}")
@@ -317,8 +329,8 @@ def get_picture_hole():
 def setup_camera_holes(_cam):
     try:
         _cam.ExposureAuto.set('Off')        # turn off auto exposure
-        _cam.ExposureTimeAbs.set(20000)     # set exposure time to 80000 micros seconds
-        _cam.Gain.set(2)                    # set gain to 3
+        _cam.ExposureTimeAbs.set(80000)     # set exposure time to 80000 micros seconds
+        _cam.Gain.set(3)                    # set gain to 3
         return True
     except:
         return False
@@ -343,8 +355,8 @@ def hole_location(gray_frame, isItTrue, color_frame):
             x, y, r = i
             cv2.circle(color_frame, (x, y), r, (0, 255, 0), 2)  # Circle outline
             cv2.circle(color_frame, (x, y), 2, (0, 0, 255), 3)  # Center point
-        print("The following circles are present: ")
-        print(circles)
+        #print("The following circles are present: ")
+        #print(circles)
 
         # Show result
         cv2.imshow('Detected Circle', color_frame)
