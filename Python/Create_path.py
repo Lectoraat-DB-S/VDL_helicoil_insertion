@@ -15,13 +15,13 @@ Simplify mesh for collision checking: e.g. simplify mesh addin. For simple geome
 USE_GLOBAL_COORDINATES = False # SET THIS TO TRUE IF YOUR PART FRAME IS RELATIVE TO THE STATION ORIGIN (0,0,0), DEFAULT = FALSE
 USE_FIXED_FILEPATHS = False  #Fixed filepaths, if false, pop-up appears to select file
 USE_RENDER = True #rendering of intermediate steps 
-CREATE_PATH = True #true to generate paths, false to only generate waypoints
+CREATE_PATH = False #true to generate paths, false to only generate waypoints
 
 #For creating paths, create a map first. Add selected targets to help the motion planner
 start_location = 'Bovenpickup'
 Part_Frame = 'CSV Frame'
 dRot = 10 #rotational resolution for Rz attempts
-target_offset = 50 #offset with respect to hole position in mm
+target_offset = 0 #offset with respect to hole position in mm
 
 #Set robot joint limits (important for performance in mapping)
 lower_limits = [-180, -100, -30, -180, -180, -180]
@@ -67,7 +67,7 @@ def create_grouped_targets():
         RDK.ShowMessage(f"Error reading CSV: {str(e)}", False)
         return
 
-    # Select robot and tool
+    # Select robot and tools
     robot = None
     selection = RDK.Selection()
     for item in selection:
@@ -87,7 +87,7 @@ def create_grouped_targets():
         robot.setParam("JointLimitsHigh", upper_str)
 
 
-    tool = RDK.Item('Screwdriver')
+    tool = RDK.Item('Screwdriver Indraaitool')
     robot.setPoseTool(tool)
     
     for item in selection:
@@ -97,6 +97,8 @@ def create_grouped_targets():
     
     if tool is None or not robot.Valid():
         tool = RDK.Item('', robolink.ITEM_TYPE_TOOL)
+
+    tool2 = RDK.Item('Camera', robolink.ITEM_TYPE_TOOL)
 
     # Get part frame
     if USE_FIXED_FILEPATHS:
@@ -172,34 +174,72 @@ def create_grouped_targets():
                 # --- REACHABILITY & COLLISION CHECK ---
                 target_pose_abs = target.PoseAbs()
                 robot_base_abs = robot.PoseAbs()
-                tool_pose = robot.PoseTool()
+
+                # Define both TCPs (update these to pull from your actual tool items if needed)
+                tool_pose_1 = robot.PoseTool() 
+                tool_pose_2 = tool2.PoseTool() # Assuming 'tool2' is your second RDK item
+
+                success = False
 
                 for angle_deg in range(0, 360, dRot):
                     rotation_z = robomath.rotz(angle_deg * robomath.pi / 180.0)
                     pose_rel_robot = (robot_base_abs.inv() * target_pose_abs) * rotation_z
                     
-                    all_solutions = robot.SolveIK_All(pose_rel_robot, tool=tool_pose)
-                    n_sols = all_solutions.size(1)
+                    # 1. Calculate all IK solutions for BOTH TCPs at this specific orientation
+                    sols_1 = robot.SolveIK_All(pose_rel_robot, tool=tool_pose_1)
+                    sols_2 = robot.SolveIK_All(pose_rel_robot, tool=tool_pose_2)
+                    
+                    # If either TCP cannot reach this orientation at all, skip to the next angle
+                    if sols_1.size(1) == 0 or sols_2.size(1) == 0:
+                        continue
 
-                    for i in range(n_sols):
-                        joints_sol = all_solutions[:, i]
-                        if joints_sol is not None and len(joints_sol.rows) > 0:
-                            robot.setJoints(joints_sol)
+                    # 2. Iterate through TCP 1 solutions
+                    for i in range(sols_1.size(1)):
+                        joints_1 = sols_1[:, i]
+                        
+                        if joints_1 is not None and len(joints_1.rows) > 0:
+                            robot.setJoints(joints_1)
+                            
+                            # Check collision for TCP 1
                             if RDK.Collisions() == 0:
-                                # Convert to Joint Target and save
-                                target.setAsJointTarget()
-                                target.setJoints(joints_sol)
-                                 
-                                #Create a robot path 
-
-                                if CREATE_PATH:
-                                    success = create_robot_path(robot,target, prog)
-                                    break
-                                else:
-                                    success = True
-                                    break 
-                    if success: break
-                if success: break 
+                                # Extract the robot's configuration (e.g., [Front, Elbow Up, Flip])
+                                config_1 = list(robot.JointsConfig(joints_1))
+                                
+                                # 3. If TCP 1 is safe, look for a matching configuration in TCP 2
+                                for j in range(sols_2.size(1)):
+                                    joints_2 = sols_2[:, j]
+                                    
+                                    if joints_2 is not None and len(joints_2.rows) > 0:
+                                        config_2 = list(robot.JointsConfig(joints_2))
+                                        
+                                        # Compare the first 3 flags (Front/Back, Up/Down, Flip/Non-Flip)
+                                        if config_1[:3] == config_2[:3]:
+                                            robot.setJoints(joints_2)
+                                            
+                                            # Check collision for TCP 2
+                                            if RDK.Collisions() == 0:
+                                                
+                                                # --- SUCCESS! ---
+                                                # Both TCPs can reach this orientation safely 
+                                                # with the same robot configuration.
+                                                
+                                                # Set robot back to TCP 1 joints for saving
+                                                robot.setJoints(joints_1)
+                                                
+                                                # Convert to Joint Target and save (Using TCP 1's joints)
+                                                target.setAsJointTarget()
+                                                target.setJoints(joints_1)
+                                                
+                                                # Create a robot path 
+                                                if CREATE_PATH:
+                                                    success = create_robot_path(robot, target, prog)
+                                                else:
+                                                    success = True
+                                                
+                                                break # Break TCP 2 loop
+                                if success: break # Break TCP 1 loop
+                    if success: break # Break Rotation loop                
+                if success: break # Not sure if I need this break
 
             # Handle failed solutions
             if not success:
