@@ -1,5 +1,5 @@
 import csv
-import os
+#import os
 import tkinter as tk
 from tkinter import filedialog
 from robodk import robolink, robomath

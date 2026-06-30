@@ -1,97 +1,63 @@
 # Helicoil insertion 🦾
 
-This repository contains the code for the VDL_helicoil_insertion HMI, designed to control a UR10e cobot with an OnRobot Screwdriver, a Mako G131-C camera for calibration and a Cobotrack. This HMI offers flexible control of these components from a PC, streamlining complex tasks such as inserting screws into models with numerous holes that would be difficult to perform manually via Polyscope.
+This repository contains the code for Project CAR. The aim of the project is to insert helicoils using a mobile cobot with an automatically generated robot program. This code connects the UR10e, OnRobot Screwdriver, Mako G131-C camera, and the simulation program RoboDK. It includes code for generating robot programs, calibrating the position of the robot, and performing helicoil insertion. The HMI/GUI is included in a separate folder but is no longer used.
 
 ---
 
-## **Code Guidelines**
+## **Contents**
 
-When delivering code, we highly recommend including a `README` file. This makes it easier for others to understand, use, or build upon your work. This `README` describes the project, its dependencies, and how to use the code. While minor deviations are acceptable based on the programming language used, please try to adhere as closely as possible to these standards.
+The code can be found in the `Python` folder. To generate a new robot program from scratch, use the numbered scripts:
 
-Here's what we'd like to see in a `README`:
+* **`1.1 Find_hole.py`**: Generates a database containing all the holes in a 3D model (STEP-file format).
+* **`1.2 Create_path.py`**: Generates the actual robot paths. Imports the holes as targets in RoboDK. Currently, the holes are imported and checked for collisions correctly, but the paths must be generated manually in RoboDK by linking the targets.
 
----
+* **`2.0 Calibrate_camera-TCP.py`**: This code can be used to calibrate the camera TCP to ensure the accuracy of subsequent calibration steps. This is necessary after you have touched the camera, as there is some play between the camera lens and the image sensor.
+* **`2.1 Calibrate_robotposition_Jorim.py`**: Calibrates the reference frame of the cobot in the horizontal direction.
 
-## **Description**
+* **`3.1 Insert_helicoils.py`**: This code contains the instructions for the actual helicoil insertion based on the generated robot paths.
 
-The `VDL_helicoil_insertion` is a Human-Machine Interface (HMI) built to control a UR10e cobot with an OnRobot Screwdriver, a Mako G131-C camera for calibration and a Cobotrack. This HMI enables flexible component control directly from a PC, which is particularly beneficial for complex tasks. For instance, models with over 300 holes are challenging to process manually using Polyscope; this solution effectively circumvents that issue.
+* **`camera.py`**: The functions in this code are used by the calibration programs to access the camera and analyze the captured images.
+
+* The subfolder `Extra Calibration` includes calibration scripts that are no longer used.
+
+The folder `Example_Jorim` contains the required data files and RoboDK projects to demonstrate the individual Python scripts.
+The folder `Example` contains older files used to run and demonstrate the path planning.
+The folder `Archive` contains the code for the HMI/GUI, which is no longer used.
 
 ---
 
 ## **Dependencies & Versions**
 
-Below is a list of all necessary imports, packages, and software with their respective versions. Please verify your code on another machine to ensure all dependencies are accurately noted. 
+Below is a list of the modules used in the code. The versions of most modules are not known yet.
+The code should be run using Python 3.12.9 in a virtual environment.
 
-* `Anaconda Python Interpreter`: 3.13.5
-* `ur-rtde`: 1.6.2
-* `websocket-client`: 1.8.0
-* `sockets`: 1.0.0
+* `robodk`
 * `requests`: 2.32.5
-* `tkinter`
 * `time`
-* `re`
-* `threading`
-* `python-socketio`: 5.13.0
-* `numpy-base`: 2.2.6
-* `vmbpy`: 
-* `opencv-python`:
-* `pyzbar`: 
+* `math`
+* `tkinter`
+* `numpy`
+* `vmbpy`
+* `pyzbar`
+* `sys`
+* `gmsh`
+* `csv`
+* `matplotlib`
+* `PyQt5`
+* `cv2`
 
 ---
 
-## **Architecture**
+## **Connections**
 
-This section describes the architecture of the project, outlining the purpose of each file and its interdependencies.
+The different components are connected to a local network on the AMR:
 
-GUI folder contents:
+| ------------------ | ---------------- |
+| **Subnet Mask**    | `255.255.255.0`  |
+| **IP Cobot**       | `192.168.12.120` |
+| **IP Screwdriver** | `192.168.12.15`  |
+| **IP Camera**      | `192.168.12.100` |
 
-* **`cobotrack_interface`**: Contains functions for sending requests to control the Cobotrack, called by `gui_app`.
-* **`gui_app`**: Implements the core logic of the HMI, managing function calls and file interactions.
-* **`main`**: Solely responsible for the initialization of the HMI.
-* **`requests_interface`**: Defines functions for sending requests to the OnRobot Screwdriver API, including specific screwdriver operations. 
-* **`rtde_interface`**: Manages cobot movement and status checks, along with connection functions.
-* **`socketio_interface`**: Describes and initializes the SocketIO connection protocol for real-time status updates from the OnRobot Screwdriver.
-* **`Io_test`**: Runs the helicoil feeder loop. Manages I/O inputs that are integrated in the cobot.
-
-Robodk folder contents:
-
-* **`Instellingen folder`**: Contains every setting that should be set up in robodk
-
-* **`csv_importernewest`**: Contains code for importing csv targets in robodk
-* **`rdk file for robodk`**: robodk file where the setup is
-* **`Generatefaceapproaches`**: Contains code for generating face approaches, generating links, creating sub and main programs
-
----
-
-## **References**
-
-All code in this repository has been self-written based on the API descriptions of the respective libraries. Comments within the code and some of the functions were generated with the assistance of ChatGPT or Gemini Pro.
-
-* No external code or adapted functions were used.
-
----
-
-## **Usage**
-
-When using external hardware such as a robot, it's crucial to understand the connection and startup procedures. For example, it might be necessary to start the program on the cobot before launching the Python code on your laptop.
-
-1. **Start Polyscope on the Cobot:** This cannot be done from the PC.
-2. **Configure Network Settings:** Ensure the IP address and subnet mask are correctly configured in the cobot's settings according to the following settings:
-
-- **PC:**
-	- **Subnet Mask:** 255.255.255.0
-	- **Cobot:** 192.168.12.120
-	- **Screwdriver:** 192.168.12.15
-	- **HMI:** 192.168.12.137 (PC IP address used)
-	- **Camera:** 192.168.12.100
-
-- **MIR:**
-    - **IP address:** 192.168.12.24 (not controlled in this HMI)
-	- **Subnet mask:** 255.255.0.0
-	- **Safety PLC:** 169.254.60.1 (not controlled in this HMI)
-	
-3. **Set Polyscope to remote control:** The laptop cannot access the cobot when it is not in remote control.
-4. **Run python software:** Main.py to start the program on the PC
-5. **Check connection:"** Press Check Connections to make sure the RTDE and the Socket_io (screwdriver) are connected. The Cobotrack can stay disconnected when not in use.
-
----
+The Python code communicates with the cobot via RoboDK.
+The code communicates directly with the screwdriver using HTTP requests.
+Communication with the camera is handled through the Vimba module (`vmbpy`).

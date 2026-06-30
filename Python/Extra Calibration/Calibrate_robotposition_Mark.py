@@ -1,6 +1,5 @@
 from robodk import robomath
 from robodk.robolink import *
-import math
 from camera import get_picture
 
 # Initialize API

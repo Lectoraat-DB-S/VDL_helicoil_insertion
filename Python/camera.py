@@ -4,7 +4,7 @@ import numpy as np
 from vmbpy import *
 from pyzbar.pyzbar import decode, ZBarSymbol
 
-DEBUG_CODE = True                              # true if you want prints, false if you don't
+DEBUG_CODE = False                              # true if you want prints, false if you don't
 QR_REAL_SIZE = 40                               # in milimeters
 # QR_PIXEL_SIZE = 124                             # in pixels
 # if SELF_CALIBRATING:
@@ -318,7 +318,7 @@ def get_picture_hole(distance):
                 nearest_hole = hole_cords[distances.index(min(distances))]
                 #offset = [nearest_hole[0]-MIDDLE_POINT_CAMERA[0], MIDDLE_POINT_CAMERA[1]-nearest_hole[1]]
                 offset = np.subtract(nearest_hole[0:2], MIDDLE_POINT_CAMERA)
-                offset = offset*(40*distance/90750) #empirical relation between pixelsize in mm and distance from camera lense
+                offset = offset*(40*distance/90750) # Empirical relation between pixelsize in mm and distance from camera lense
                 return offset.tolist()
                 # return True, hole_cords
 
@@ -329,7 +329,7 @@ def get_picture_hole(distance):
 def setup_camera_holes(_cam):
     try:
         _cam.ExposureAuto.set('Off')        # turn off auto exposure
-        _cam.ExposureTimeAbs.set(80000)     # set exposure time to 80000 micros seconds
+        _cam.ExposureTimeAbs.set(50000)     # set exposure time to 80000 micros seconds
         _cam.Gain.set(3)                    # set gain to 3
         return True
     except:
