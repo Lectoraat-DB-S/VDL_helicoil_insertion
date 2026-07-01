@@ -9,7 +9,6 @@ import requests
 # Settings
 run_on_robot = True         # Set to False if you want to simulate only
 Run_main_program = True     # Set to False if you don't want to run the main program, but test something else instead
-test_aanvoer = False
 DEBUG_CODE = False
 
 # Initialize API
@@ -74,12 +73,12 @@ def pickup_helicoil():
         #trigger feeder
         robot.setAO(0, 0.4)
         while robot.getDI(1) != '1.000000':
-            time.sleep(.05)
-        time.sleep(.3)
+            time.sleep(.02)
+        time.sleep(.2) #If the feeder stops immediately, the helicoil might not slide down due to the lack of vibrations
         robot.setAO(0, 0)
     #robot.waitDI(0, '1.000000')
     #time.sleep(0.5)
-    time.sleep(1)
+    time.sleep(1.5)
     robot.setDO(2, 0)
     robot.setDO(4, 1)
     time.sleep(5)
@@ -88,11 +87,11 @@ def pickup_helicoil():
     robot.MoveL(RDK.Item('pick-up'))
     shank_force = 20 #shank force
     screw_length = 16.5 #helicoil length
-    max_torque = 0.3 #max torque untill stopping screw motion via default premount behavior
+    max_torque = 0.5 #max torque untill stopping screwing in
     tighten_url = f"http://{compute_box_ip}/api/dc/sd/tighten/{tool_id}/{shank_force}/{screw_length}/{max_torque}"
     requests.get(tighten_url, auth=(username, password))
     time.sleep(12)
-    shaft_value = 27
+    shaft_value = 28
     shank_url =  f"http://{compute_box_ip}/api/dc/sd/move_shank/{tool_id}/{shaft_value}"
     requests.get(shank_url, auth=(username, password))
     time.sleep(4)
@@ -144,6 +143,7 @@ holes = [target for target in RDK.ItemList(ITEM_TYPE_TARGET) if target.Name().st
 if DEBUG_CODE:
     for target in holes:
         print(target.Name())
+holes = holes[11:]
 
 # --- Main Program ---
 if Run_main_program:
@@ -153,17 +153,7 @@ if Run_main_program:
         program_name = f'bovenpickupTo{target.Name().replace(" ", "").replace("_", "")}'
         run_generated_program(program_name)
         scan_hole(target)
-        time.sleep(10)
         insert_helicoil()
         # Move back to the pickup location
         program_name = f'{target.Name().replace(" ", "").replace("_", "")}Tobovenpickup'
         run_generated_program(program_name)
-
-# Test aanvoer
-while test_aanvoer:
-    robot.setAO(0, 0.4)
-    while robot.getDI(1) != '1.000000':
-        time.sleep(.02)
-    time.sleep(.2)
-    robot.setAO(0, 0)
-    time.sleep(5)

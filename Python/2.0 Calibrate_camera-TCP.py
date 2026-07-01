@@ -9,7 +9,7 @@ RDK = Robolink()
 robot = RDK.Item('', ITEM_TYPE_ROBOT)
 
 # Initialize robot
-#RDK.setRunMode(RUNMODE_RUN_ROBOT)
+RDK.setRunMode(RUNMODE_RUN_ROBOT)
 tool = RDK.Item('Camera', ITEM_TYPE_TOOL)
 robot.setPoseTool(tool) #Makes sure the right TCP is used for the move commands
 robot.setFrame(RDK.Item('Hoek lastafel'))

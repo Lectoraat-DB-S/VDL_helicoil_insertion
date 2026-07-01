@@ -4,9 +4,9 @@ import math
 
 # Fill in manually the XYZ-coordinates of three measured points on the welding table.
 # The order of the points is random
-A = [-674, -368, -35.9]
-B = [-672, -973, -29.6]
-C = [162, -523, -36.6]
+A = [-632, -446, -35.3]
+B = [-635, -1024, -28.8]
+C = [118, -479, -35.6]
 
 # Calculate 2 vectors in the plane
 AB = robomath.subs3(B, A)

@@ -4,7 +4,7 @@ import numpy as np
 from vmbpy import *
 from pyzbar.pyzbar import decode, ZBarSymbol
 
-DEBUG_CODE = False                              # true if you want prints, false if you don't
+DEBUG_CODE = True                              # true if you want prints, false if you don't
 QR_REAL_SIZE = 40                               # in milimeters
 # QR_PIXEL_SIZE = 124                             # in pixels
 # if SELF_CALIBRATING:
@@ -81,7 +81,7 @@ def get_picture():
 def setup_camera(_cam):
     try:
         _cam.ExposureAuto.set('Off')        # turn off auto exposure
-        _cam.ExposureTimeAbs.set(80000)     # set exposure time to 80000 micros seconds
+        _cam.ExposureTimeAbs.set(100000)    # set exposure time to 80000 micros seconds
         _cam.Gain.set(4)                    # set gain to 3
         return True
     except:
@@ -329,7 +329,7 @@ def get_picture_hole(distance):
 def setup_camera_holes(_cam):
     try:
         _cam.ExposureAuto.set('Off')        # turn off auto exposure
-        _cam.ExposureTimeAbs.set(50000)     # set exposure time to 80000 micros seconds
+        _cam.ExposureTimeAbs.set(150000)     # set exposure time to 80000 micros seconds
         _cam.Gain.set(3)                    # set gain to 3
         return True
     except:

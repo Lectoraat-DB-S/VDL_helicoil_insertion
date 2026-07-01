@@ -8,7 +8,7 @@ from camera import get_picture
 twopoint_calibration = True         #Two QR-codes will be scanned when enabled for higher accuracy
 move_robot = True                   #The program will be run on the real robot when enabled
 Update_robotbase = True             #The position of the robotbase will be updated in RoboDK when enabled
-move_to_calibration_check = False   #The robot will move to a given point halfway the QR-codes for a visual check of the calibration accuracy
+move_to_calibration_check = True   #The robot will move to a given point halfway the QR-codes for a visual check of the calibration accuracy
 DEBUG_CODE = True
 
 # Initialize API
